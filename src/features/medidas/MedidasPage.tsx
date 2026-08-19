@@ -89,6 +89,7 @@ export function MedidasPage() {
             {rotulo}
             <input
               type="number"
+              inputMode="decimal"
               step="0.1"
               value={(form[chave] as number | null) ?? ''}
               onChange={(e) => setForm({ ...form, [chave]: e.target.value ? Number(e.target.value) : null })}
@@ -97,7 +98,9 @@ export function MedidasPage() {
         ))}
 
         <div className="botoes-linha">
-          <button type="submit">{editandoId !== null ? 'Salvar alterações' : 'Registrar medida'}</button>
+          <button type="submit" className="btn-primary">
+            {editandoId !== null ? 'Salvar alterações' : 'Registrar medida'}
+          </button>
           {editandoId !== null && (
             <button type="button" onClick={cancelarEdicao}>
               Cancelar

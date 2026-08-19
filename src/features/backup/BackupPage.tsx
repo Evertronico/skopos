@@ -117,7 +117,7 @@ export function BackupPage() {
         </label>
 
         <div className="botoes-linha">
-          <button onClick={handleEnviarBackup} disabled={carregando}>
+          <button className="btn-primary" onClick={handleEnviarBackup} disabled={carregando}>
             Enviar backup
           </button>
           <button onClick={handleVerificarBackup} disabled={carregando}>

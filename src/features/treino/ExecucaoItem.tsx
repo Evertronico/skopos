@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { IconTimer } from '../../components/icons'
 import type { ExecucaoExercicio } from '../../db/types'
 
 type CamposEditaveis = Partial<
@@ -10,97 +11,78 @@ interface Props {
   onAtualizar: (id: number, campos: CamposEditaveis) => void
 }
 
-const DURACAO_AVISO_MS = 5000
-
-function formatarTempo(segundos: number): string {
-  const m = Math.floor(segundos / 60)
-  const s = segundos % 60
-  return `${m}:${s.toString().padStart(2, '0')}`
-}
-
-export function ExecucaoItem({ exec, onAtualizar }: Props) {
+function TimerDescanso({ segundos }: { segundos: number }) {
   const [contagem, setContagem] = useState<number | null>(null)
-  const [avisando, setAvisando] = useState(false)
 
-  // Contagem regressiva: um tick por segundo enquanto houver tempo restante.
   useEffect(() => {
-    if (contagem === null || contagem <= 0) return
+    if (contagem === null || contagem <= 0) {
+      if (contagem === 0) setContagem(null)
+      return
+    }
     const tick = setTimeout(() => setContagem((atual) => (atual ?? 1) - 1), 1000)
     return () => clearTimeout(tick)
   }, [contagem])
 
-  // Ao zerar, dispara o aviso. Efeito separado do de cima para não cancelar
-  // o próprio timeout do aviso ao alterar `contagem` na mesma passada.
-  useEffect(() => {
-    if (contagem !== 0) return
-    setContagem(null)
-    setAvisando(true)
-  }, [contagem])
-
-  // Aviso some sozinho depois de alguns segundos.
-  useEffect(() => {
-    if (!avisando) return
-    const fimAviso = setTimeout(() => setAvisando(false), DURACAO_AVISO_MS)
-    return () => clearTimeout(fimAviso)
-  }, [avisando])
-
-  function handleFezMaisUma() {
-    onAtualizar(exec.id, { series_feitas: (exec.series_feitas ?? 0) + 1 })
-    setAvisando(false)
-    setContagem(exec.descanso_seg && exec.descanso_seg > 0 ? exec.descanso_seg : 60)
+  if (contagem !== null) {
+    return <span className="timer-contagem">{contagem}</span>
   }
 
   return (
+    <button
+      type="button"
+      className="timer-botao"
+      onClick={() => setContagem(segundos > 0 ? segundos : 60)}
+      aria-label="Iniciar cronômetro de descanso"
+    >
+      <IconTimer size={16} />
+      {segundos > 0 ? segundos : 60}s
+    </button>
+  )
+}
+
+function numeroOuNulo(valorTexto: string): number | null {
+  return valorTexto === '' ? null : Number(valorTexto)
+}
+
+export function ExecucaoItem({ exec, onAtualizar }: Props) {
+  return (
     <li className="execucao-item">
-      <label className="checkbox">
-        <input
-          type="checkbox"
-          checked={exec.concluido === 1}
-          onChange={(e) => onAtualizar(exec.id, { concluido: e.target.checked ? 1 : 0 })}
-        />
-        {exec.nome}
-        {exec.exercicio_plano_id === null && <span className="badge">extra</span>}
-      </label>
+      <div className="execucao-topo">
+        <label className="checkbox">
+          <input
+            type="checkbox"
+            checked={exec.concluido === 1}
+            onChange={(e) => onAtualizar(exec.id, { concluido: e.target.checked ? 1 : 0 })}
+          />
+          {exec.nome}
+          {exec.exercicio_plano_id === null && <span className="badge">extra</span>}
+        </label>
+        <TimerDescanso segundos={exec.descanso_seg ?? 60} />
+      </div>
 
       <div className="execucao-campos">
         <input
           type="number"
+          inputMode="numeric"
           aria-label="séries feitas"
           value={exec.series_feitas ?? ''}
-          onChange={(e) => onAtualizar(exec.id, { series_feitas: Number(e.target.value) })}
+          onChange={(e) => onAtualizar(exec.id, { series_feitas: numeroOuNulo(e.target.value) })}
         />
         <input
           type="number"
+          inputMode="numeric"
           aria-label="repetições feitas"
           value={exec.repeticoes_feitas ?? ''}
-          onChange={(e) => onAtualizar(exec.id, { repeticoes_feitas: Number(e.target.value) })}
+          onChange={(e) => onAtualizar(exec.id, { repeticoes_feitas: numeroOuNulo(e.target.value) })}
         />
         <input
           type="number"
+          inputMode="decimal"
           step="0.5"
           aria-label="carga usada"
           value={exec.carga_kg ?? ''}
-          onChange={(e) => onAtualizar(exec.id, { carga_kg: Number(e.target.value) })}
+          onChange={(e) => onAtualizar(exec.id, { carga_kg: numeroOuNulo(e.target.value) })}
         />
-      </div>
-
-      <div className="descanso-controle">
-        {contagem === null && !avisando && (
-          <button type="button" onClick={handleFezMaisUma}>
-            Fiz mais uma série
-          </button>
-        )}
-
-        {contagem !== null && (
-          <div className="descanso-contagem">
-            <span>Descansando: {formatarTempo(contagem)}</span>
-            <button type="button" className="link" onClick={() => setContagem(null)}>
-              pular
-            </button>
-          </div>
-        )}
-
-        {avisando && <div className="aviso-descanso">Hora da próxima série!</div>}
       </div>
     </li>
   )

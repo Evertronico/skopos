@@ -25,8 +25,8 @@ export function NutricaoPage() {
   const [sono, setSono] = useState<RegistroSono[]>([])
   const [nutricao, setNutricao] = useState<RegistroNutricao[]>([])
 
-  const [mlHoje, setMlHoje] = useState(250)
-  const [horasSono, setHorasSono] = useState(8)
+  const [mlHoje, setMlHoje] = useState<number | ''>(250)
+  const [horasSono, setHorasSono] = useState<number | ''>(8)
   const [qualidadeSono, setQualidadeSono] = useState(3)
   const [calorias, setCalorias] = useState<number | ''>('')
   const [proteina, setProteina] = useState<number | ''>('')
@@ -104,12 +104,14 @@ export function NutricaoPage() {
 
   async function handleAddHidratacao(e: React.FormEvent) {
     e.preventDefault()
+    if (mlHoje === '') return
     await addHidratacao(todayISO(), mlHoje)
     await recarregar()
   }
 
   async function handleAddSono(e: React.FormEvent) {
     e.preventDefault()
+    if (horasSono === '') return
     await addSono(todayISO(), horasSono, qualidadeSono)
     await recarregar()
   }
@@ -183,6 +185,7 @@ export function NutricaoPage() {
             Calorias/dia
             <input
               type="number"
+              inputMode="numeric"
               value={formPlano.calorias}
               onChange={(e) => setFormPlano({ ...formPlano, calorias: e.target.value ? Number(e.target.value) : '' })}
             />
@@ -191,6 +194,7 @@ export function NutricaoPage() {
             Proteína (g/dia)
             <input
               type="number"
+              inputMode="decimal"
               value={formPlano.proteina_g}
               onChange={(e) =>
                 setFormPlano({ ...formPlano, proteina_g: e.target.value ? Number(e.target.value) : '' })
@@ -201,6 +205,7 @@ export function NutricaoPage() {
             Água (ml/dia)
             <input
               type="number"
+              inputMode="numeric"
               value={formPlano.agua_ml}
               onChange={(e) => setFormPlano({ ...formPlano, agua_ml: e.target.value ? Number(e.target.value) : '' })}
             />
@@ -209,6 +214,7 @@ export function NutricaoPage() {
             Sono (horas/dia)
             <input
               type="number"
+              inputMode="decimal"
               step="0.5"
               value={formPlano.sono_horas}
               onChange={(e) =>
@@ -217,7 +223,9 @@ export function NutricaoPage() {
             />
           </label>
           <div className="botoes-linha">
-            <button type="submit">Salvar plano</button>
+            <button type="submit" className="btn-primary">
+              Salvar plano
+            </button>
             <button type="button" onClick={() => setEditandoPlano(false)}>
               Cancelar
             </button>
@@ -233,8 +241,16 @@ export function NutricaoPage() {
       <section>
         <h3>Hidratação</h3>
         <form className="inline-form" onSubmit={handleAddHidratacao}>
-          <input type="number" value={mlHoje} onChange={(e) => setMlHoje(Number(e.target.value))} /> ml
-          <button type="submit">Registrar</button>
+          <input
+            type="number"
+            inputMode="numeric"
+            value={mlHoje}
+            onChange={(e) => setMlHoje(e.target.value === '' ? '' : Number(e.target.value))}
+          />{' '}
+          ml
+          <button type="submit" className="btn-primary">
+            Registrar
+          </button>
         </form>
         <ul className="list-compact">
           {hidratacao.slice(0, 5).map((r) => (
@@ -250,9 +266,10 @@ export function NutricaoPage() {
         <form className="inline-form" onSubmit={handleAddSono}>
           <input
             type="number"
+            inputMode="decimal"
             step="0.5"
             value={horasSono}
-            onChange={(e) => setHorasSono(Number(e.target.value))}
+            onChange={(e) => setHorasSono(e.target.value === '' ? '' : Number(e.target.value))}
           />{' '}
           horas, qualidade
           <select value={qualidadeSono} onChange={(e) => setQualidadeSono(Number(e.target.value))}>
@@ -262,7 +279,9 @@ export function NutricaoPage() {
               </option>
             ))}
           </select>
-          <button type="submit">Registrar</button>
+          <button type="submit" className="btn-primary">
+            Registrar
+          </button>
         </form>
         <ul className="list-compact">
           {sono.slice(0, 5).map((r) => (
@@ -278,17 +297,21 @@ export function NutricaoPage() {
         <form className="inline-form" onSubmit={handleAddNutricao}>
           <input
             type="number"
+            inputMode="numeric"
             placeholder="calorias"
             value={calorias}
             onChange={(e) => setCalorias(e.target.value ? Number(e.target.value) : '')}
           />
           <input
             type="number"
+            inputMode="decimal"
             placeholder="proteína (g)"
             value={proteina}
             onChange={(e) => setProteina(e.target.value ? Number(e.target.value) : '')}
           />
-          <button type="submit">Registrar</button>
+          <button type="submit" className="btn-primary">
+            Registrar
+          </button>
         </form>
         <ul className="list-compact">
           {nutricao.slice(0, 5).map((r) => (

@@ -74,6 +74,17 @@ export function IconCloud({ size = 22, className }: IconProps) {
   )
 }
 
+export function IconTimer({ size = 22, className }: IconProps) {
+  return (
+    <svg {...base} width={size} height={size} className={className} aria-hidden="true">
+      <line x1="9" y1="2" x2="15" y2="2" />
+      <line x1="12" y1="2" x2="12" y2="5" />
+      <circle cx="12" cy="13" r="8" />
+      <polyline points="12 9 12 13 15 15" />
+    </svg>
+  )
+}
+
 export function IconTarget({ size = 22, className }: IconProps) {
   return (
     <svg {...base} width={size} height={size} className={className} aria-hidden="true">

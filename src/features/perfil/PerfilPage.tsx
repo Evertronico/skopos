@@ -86,6 +86,7 @@ export function PerfilPage() {
         Altura (cm)
         <input
           type="number"
+          inputMode="numeric"
           value={perfil.altura_cm ?? ''}
           onChange={(e) => setPerfil({ ...perfil, altura_cm: e.target.value ? Number(e.target.value) : null })}
         />
@@ -121,7 +122,9 @@ export function PerfilPage() {
         </select>
       </label>
 
-      <button type="submit">Salvar</button>
+      <button type="submit" className="btn-primary">
+        Salvar
+      </button>
       {salvo && <p className="hint">Perfil salvo.</p>}
     </form>
   )

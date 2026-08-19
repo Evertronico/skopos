@@ -20,9 +20,41 @@ import type { DiaPlano, DiaSemana, ExecucaoExercicio, ExercicioPlano, PlanoTrein
 import { diasEntre, formatDataBR, NOME_DIA_SEMANA, ORDEM_DIAS_SEMANA, todayISO } from '../../lib/date'
 import { ExecucaoItem } from './ExecucaoItem'
 
-const EXERCICIO_VAZIO = { nome: '', series: 3, repeticoes: 10, carga_kg: 0, descanso_seg: 60 }
-const AVULSO_VAZIO = { nome: '', series_feitas: 3, repeticoes_feitas: 10, carga_kg: 0, descanso_seg: 60 }
+type NumeroEditavel = number | ''
+
+interface ExercicioForm {
+  nome: string
+  series: NumeroEditavel
+  repeticoes: NumeroEditavel
+  carga_kg: NumeroEditavel
+  descanso_seg: NumeroEditavel
+}
+
+interface AvulsoForm {
+  nome: string
+  series_feitas: NumeroEditavel
+  repeticoes_feitas: NumeroEditavel
+  carga_kg: NumeroEditavel
+  descanso_seg: NumeroEditavel
+}
+
+const EXERCICIO_VAZIO: ExercicioForm = { nome: '', series: 3, repeticoes: 10, carga_kg: 0, descanso_seg: 60 }
+const AVULSO_VAZIO: AvulsoForm = {
+  nome: '',
+  series_feitas: 3,
+  repeticoes_feitas: 10,
+  carga_kg: 0,
+  descanso_seg: 60,
+}
 const IDADE_LIMITE_FICHA_DIAS = 30
+
+function numeroOuVazio(valorTexto: string): NumeroEditavel {
+  return valorTexto === '' ? '' : Number(valorTexto)
+}
+
+function ouZero(valor: NumeroEditavel): number {
+  return valor === '' ? 0 : valor
+}
 
 export function TreinoPage() {
   const [planos, setPlanos] = useState<PlanoTreino[]>([])
@@ -128,7 +160,15 @@ export function TreinoPage() {
   async function handleAdicionarExercicio(e: React.FormEvent) {
     e.preventDefault()
     if (diaSelecionadoId === null || !novoExercicio.nome.trim()) return
-    await addExercicioAoDia({ ...novoExercicio, dia_plano_id: diaSelecionadoId, ordem: exercicios.length })
+    await addExercicioAoDia({
+      nome: novoExercicio.nome,
+      series: ouZero(novoExercicio.series),
+      repeticoes: ouZero(novoExercicio.repeticoes),
+      carga_kg: ouZero(novoExercicio.carga_kg),
+      descanso_seg: ouZero(novoExercicio.descanso_seg),
+      dia_plano_id: diaSelecionadoId,
+      ordem: exercicios.length,
+    })
     setNovoExercicio(EXERCICIO_VAZIO)
     setMostrarFormExercicio(false)
     setExercicios(await listExerciciosDoDia(diaSelecionadoId))
@@ -156,10 +196,10 @@ export function TreinoPage() {
     e.preventDefault()
     if (registroAtivoId === null || !novoAvulso.nome.trim()) return
     await adicionarExecucaoAvulsa(registroAtivoId, novoAvulso.nome.trim(), {
-      series_feitas: novoAvulso.series_feitas,
-      repeticoes_feitas: novoAvulso.repeticoes_feitas,
-      carga_kg: novoAvulso.carga_kg,
-      descanso_seg: novoAvulso.descanso_seg,
+      series_feitas: ouZero(novoAvulso.series_feitas),
+      repeticoes_feitas: ouZero(novoAvulso.repeticoes_feitas),
+      carga_kg: ouZero(novoAvulso.carga_kg),
+      descanso_seg: ouZero(novoAvulso.descanso_seg),
     })
     setNovoAvulso(AVULSO_VAZIO)
     setMostrarFormAvulso(false)
@@ -193,7 +233,9 @@ export function TreinoPage() {
             Uma ficha organiza seus treinos por dia da semana — por exemplo, Segunda = Peito e Tríceps, Quarta =
             Costas e Bíceps. Comece dando um nome a ela.
           </p>
-          <button onClick={() => setMostrarFormFicha(true)}>Criar minha primeira ficha</button>
+          <button className="btn-primary" onClick={() => setMostrarFormFicha(true)}>
+            Criar minha primeira ficha
+          </button>
         </div>
       )}
 
@@ -224,7 +266,9 @@ export function TreinoPage() {
                 onChange={(e) => setNovoPlanoNome(e.target.value)}
                 autoFocus
               />
-              <button type="submit">Criar</button>
+              <button type="submit" className="btn-primary">
+                Criar
+              </button>
               <button type="button" onClick={() => setMostrarFormFicha(false)}>
                 Cancelar
               </button>
@@ -291,7 +335,9 @@ export function TreinoPage() {
                     value={novoDiaNome}
                     onChange={(e) => setNovoDiaNome(e.target.value)}
                   />
-                  <button type="submit">Adicionar</button>
+                  <button type="submit" className="btn-primary">
+                    Adicionar
+                  </button>
                   <button type="button" onClick={() => setMostrarFormDia(false)}>
                     Cancelar
                   </button>
@@ -350,17 +396,19 @@ export function TreinoPage() {
                     Séries
                     <input
                       type="number"
+                      inputMode="numeric"
                       value={novoExercicio.series}
-                      onChange={(e) => setNovoExercicio({ ...novoExercicio, series: Number(e.target.value) })}
+                      onChange={(e) => setNovoExercicio({ ...novoExercicio, series: numeroOuVazio(e.target.value) })}
                     />
                   </label>
                   <label>
                     Repetições
                     <input
                       type="number"
+                      inputMode="numeric"
                       value={novoExercicio.repeticoes}
                       onChange={(e) =>
-                        setNovoExercicio({ ...novoExercicio, repeticoes: Number(e.target.value) })
+                        setNovoExercicio({ ...novoExercicio, repeticoes: numeroOuVazio(e.target.value) })
                       }
                     />
                   </label>
@@ -368,23 +416,29 @@ export function TreinoPage() {
                     Carga (kg)
                     <input
                       type="number"
+                      inputMode="decimal"
                       step="0.5"
                       value={novoExercicio.carga_kg}
-                      onChange={(e) => setNovoExercicio({ ...novoExercicio, carga_kg: Number(e.target.value) })}
+                      onChange={(e) =>
+                        setNovoExercicio({ ...novoExercicio, carga_kg: numeroOuVazio(e.target.value) })
+                      }
                     />
                   </label>
                   <label>
                     Descanso (seg)
                     <input
                       type="number"
+                      inputMode="numeric"
                       value={novoExercicio.descanso_seg}
                       onChange={(e) =>
-                        setNovoExercicio({ ...novoExercicio, descanso_seg: Number(e.target.value) })
+                        setNovoExercicio({ ...novoExercicio, descanso_seg: numeroOuVazio(e.target.value) })
                       }
                     />
                   </label>
                   <div className="botoes-linha">
-                    <button type="submit">Adicionar</button>
+                    <button type="submit" className="btn-primary">
+                      Adicionar
+                    </button>
                     <button type="button" onClick={() => setMostrarFormExercicio(false)}>
                       Cancelar
                     </button>
@@ -409,7 +463,9 @@ export function TreinoPage() {
                         onChange={(e) => setDataRegistro(e.target.value)}
                       />
                     </label>
-                    <button onClick={() => abrirRegistro(dataRegistro)}>Registrar treino</button>
+                    <button className="btn-primary" onClick={() => abrirRegistro(dataRegistro)}>
+                      Registrar treino
+                    </button>
                   </div>
 
                   {historico.length > 0 && (
@@ -465,30 +521,37 @@ export function TreinoPage() {
                       <div className="execucao-campos">
                         <input
                           type="number"
+                          inputMode="numeric"
                           aria-label="séries"
                           value={novoAvulso.series_feitas}
                           onChange={(e) =>
-                            setNovoAvulso({ ...novoAvulso, series_feitas: Number(e.target.value) })
+                            setNovoAvulso({ ...novoAvulso, series_feitas: numeroOuVazio(e.target.value) })
                           }
                         />
                         <input
                           type="number"
+                          inputMode="numeric"
                           aria-label="repetições"
                           value={novoAvulso.repeticoes_feitas}
                           onChange={(e) =>
-                            setNovoAvulso({ ...novoAvulso, repeticoes_feitas: Number(e.target.value) })
+                            setNovoAvulso({ ...novoAvulso, repeticoes_feitas: numeroOuVazio(e.target.value) })
                           }
                         />
                         <input
                           type="number"
+                          inputMode="decimal"
                           step="0.5"
                           aria-label="carga"
                           value={novoAvulso.carga_kg}
-                          onChange={(e) => setNovoAvulso({ ...novoAvulso, carga_kg: Number(e.target.value) })}
+                          onChange={(e) =>
+                            setNovoAvulso({ ...novoAvulso, carga_kg: numeroOuVazio(e.target.value) })
+                          }
                         />
                       </div>
                       <div className="botoes-linha">
-                        <button type="submit">Adicionar</button>
+                        <button type="submit" className="btn-primary">
+                          Adicionar
+                        </button>
                         <button type="button" onClick={() => setMostrarFormAvulso(false)}>
                           Cancelar
                         </button>

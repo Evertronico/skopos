@@ -128,17 +128,26 @@ export function DashboardPage() {
   const diferenca = mediaAtual - mediaAnterior
 
   let mensagem = 'Sem dados suficientes na semana anterior para comparar.'
+  let tom: 'positivo' | 'negativo' | 'neutro' = 'neutro'
   if (mediaAnterior > 0) {
-    if (diferenca > 3) mensagem = `Você está evoluindo — pontuação subiu ${diferenca.toFixed(0)} pontos.`
-    else if (diferenca < -3) mensagem = `Atenção — pontuação caiu ${Math.abs(diferenca).toFixed(0)} pontos.`
-    else mensagem = 'Estável em relação à semana anterior.'
+    if (diferenca > 3) {
+      mensagem = `Você está evoluindo — pontuação subiu ${diferenca.toFixed(0)} pontos.`
+      tom = 'positivo'
+    } else if (diferenca < -3) {
+      mensagem = `Atenção — pontuação caiu ${Math.abs(diferenca).toFixed(0)} pontos.`
+      tom = 'negativo'
+    } else {
+      mensagem = 'Estável em relação à semana anterior.'
+    }
   }
 
   return (
     <div className="page">
       <h2>Dashboard</h2>
-      <RadarChart atual={atual} anterior={anterior} />
-      <p className="hint">{mensagem}</p>
+      <div className="card">
+        <RadarChart atual={atual} anterior={anterior} />
+        <p className={`resultado-card ${tom}`}>{mensagem}</p>
+      </div>
     </div>
   )
 }

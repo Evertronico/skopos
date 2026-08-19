@@ -44,7 +44,9 @@ export default function App() {
             className={chave === aba ? 'nav-item active' : 'nav-item'}
             onClick={() => setAba(chave)}
           >
-            <Icone size={20} className="nav-icon" />
+            <span className="nav-icon-wrap">
+              <Icone size={20} className="nav-icon" />
+            </span>
             <span>{rotulo}</span>
           </button>
         ))}
