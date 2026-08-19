@@ -1,10 +1,10 @@
 import initSqlJs, { type Database, type SqlJsStatic } from 'sql.js'
 import sqlWasmUrl from 'sql.js/dist/sql-wasm.wasm?url'
-import { del, get, set } from 'idb-keyval'
-import { SCHEMA_SQL, SCHEMA_VERSION } from './schema'
+import { get, set } from 'idb-keyval'
+import { runMigrations } from './migrations'
+import { SCHEMA_SQL } from './schema'
 
 const STORAGE_KEY = 'skopos-db'
-const VERSION_KEY = 'skopos-db-version'
 
 let sqlPromise: Promise<SqlJsStatic> | null = null
 let db: Database | null = null
@@ -21,17 +21,12 @@ export async function getDb(): Promise<Database> {
   if (db) return db
 
   const SQL = await getSql()
-  const storedVersion = await get<number>(VERSION_KEY)
-  const versionCompativel = storedVersion === SCHEMA_VERSION
-  const existing = versionCompativel ? await get<Uint8Array>(STORAGE_KEY) : undefined
-
-  if (!versionCompativel && storedVersion !== undefined) {
-    await del(STORAGE_KEY)
-  }
+  const existing = await get<Uint8Array>(STORAGE_KEY)
 
   db = existing ? new SQL.Database(existing) : new SQL.Database()
+  const migrou = runMigrations(db)
   db.run(SCHEMA_SQL)
-  if (!existing) await persist()
+  if (!existing || migrou) await persist()
 
   return db
 }
@@ -40,7 +35,6 @@ async function persist(): Promise<void> {
   if (!db) return
   const bytes = db.export()
   await set(STORAGE_KEY, bytes)
-  await set(VERSION_KEY, SCHEMA_VERSION)
 }
 
 export function scheduleSave(): void {
@@ -87,6 +81,7 @@ export async function exportDbFile(): Promise<Uint8Array> {
 export async function importDbFile(bytes: Uint8Array): Promise<void> {
   const SQL = await getSql()
   db = new SQL.Database(bytes)
+  runMigrations(db)
   db.run(SCHEMA_SQL)
   await persist()
 }
