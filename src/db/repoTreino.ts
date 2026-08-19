@@ -140,3 +140,7 @@ export async function listHistoricoDoDia(diaPlanoId: number, limite = 10): Promi
     [diaPlanoId, limite],
   )
 }
+
+export async function deleteRegistroTreino(id: number): Promise<void> {
+  await run('DELETE FROM registros_treino WHERE id = ?', [id])
+}

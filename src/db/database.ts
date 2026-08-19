@@ -26,6 +26,7 @@ export async function getDb(): Promise<Database> {
   db = existing ? new SQL.Database(existing) : new SQL.Database()
   const migrou = runMigrations(db)
   db.run(SCHEMA_SQL)
+  db.run('PRAGMA foreign_keys = ON')
   if (!existing || migrou) await persist()
 
   return db
@@ -83,6 +84,7 @@ export async function importDbFile(bytes: Uint8Array): Promise<void> {
   db = new SQL.Database(bytes)
   runMigrations(db)
   db.run(SCHEMA_SQL)
+  db.run('PRAGMA foreign_keys = ON')
   await persist()
 }
 
