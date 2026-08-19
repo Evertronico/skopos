@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 1
+export const SCHEMA_VERSION = 2
 
 export const SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS perfil (
@@ -47,15 +47,34 @@ CREATE TABLE IF NOT EXISTS registros_nutricao (
   gordura_g REAL
 );
 
+-- Plano nutricional estabelecido (editável); quando ausente, o app usa metas calculadas do perfil.
+CREATE TABLE IF NOT EXISTS planos_nutricionais (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  calorias INTEGER,
+  proteina_g REAL,
+  agua_ml INTEGER,
+  sono_horas REAL,
+  criado_em TEXT
+);
+
 CREATE TABLE IF NOT EXISTS planos_treino (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   nome TEXT NOT NULL,
-  ativo INTEGER DEFAULT 1
+  ativo INTEGER DEFAULT 1,
+  criado_em TEXT NOT NULL
+);
+
+-- Um dia da semana dentro da ficha (cabeçalho). dia_semana: 0=domingo ... 6=sábado.
+CREATE TABLE IF NOT EXISTS dias_plano (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  plano_id INTEGER NOT NULL REFERENCES planos_treino(id) ON DELETE CASCADE,
+  dia_semana INTEGER NOT NULL,
+  nome TEXT
 );
 
 CREATE TABLE IF NOT EXISTS exercicios_plano (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  plano_id INTEGER NOT NULL REFERENCES planos_treino(id) ON DELETE CASCADE,
+  dia_plano_id INTEGER NOT NULL REFERENCES dias_plano(id) ON DELETE CASCADE,
   nome TEXT NOT NULL,
   ordem INTEGER DEFAULT 0,
   series INTEGER,
@@ -64,9 +83,10 @@ CREATE TABLE IF NOT EXISTS exercicios_plano (
   descanso_seg INTEGER
 );
 
+-- Uma instância de execução: o dia da ficha, realizado numa data específica.
 CREATE TABLE IF NOT EXISTS registros_treino (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  plano_id INTEGER REFERENCES planos_treino(id),
+  dia_plano_id INTEGER NOT NULL REFERENCES dias_plano(id),
   data TEXT NOT NULL
 );
 

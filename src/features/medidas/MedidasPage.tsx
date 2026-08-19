@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { WeightChart } from '../../components/WeightChart'
-import { addMedida, deleteMedida, listMedidas } from '../../db/repoMedidas'
+import { addMedida, deleteMedida, listMedidas, updateMedida } from '../../db/repoMedidas'
 import type { MedidaAntropometrica } from '../../db/types'
 import { todayISO } from '../../lib/date'
 
@@ -31,7 +31,8 @@ const MEDIDA_VAZIA: NovaMedida = {
 
 export function MedidasPage() {
   const [medidas, setMedidas] = useState<MedidaAntropometrica[]>([])
-  const [nova, setNova] = useState<NovaMedida>(MEDIDA_VAZIA)
+  const [form, setForm] = useState<NovaMedida>(MEDIDA_VAZIA)
+  const [editandoId, setEditandoId] = useState<number | null>(null)
 
   async function recarregar() {
     setMedidas(await listMedidas())
@@ -41,15 +42,31 @@ export function MedidasPage() {
     recarregar()
   }, [])
 
+  function iniciarEdicao(m: MedidaAntropometrica) {
+    const { id, ...resto } = m
+    setEditandoId(id)
+    setForm(resto)
+  }
+
+  function cancelarEdicao() {
+    setEditandoId(null)
+    setForm({ ...MEDIDA_VAZIA, data: todayISO() })
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    await addMedida(nova)
-    setNova({ ...MEDIDA_VAZIA, data: todayISO() })
+    if (editandoId !== null) {
+      await updateMedida(editandoId, form)
+    } else {
+      await addMedida(form)
+    }
+    cancelarEdicao()
     await recarregar()
   }
 
   async function handleDelete(id: number) {
     await deleteMedida(id)
+    if (editandoId === id) cancelarEdicao()
     await recarregar()
   }
 
@@ -60,9 +77,11 @@ export function MedidasPage() {
       <WeightChart pontos={medidas} />
 
       <form className="form-page" onSubmit={handleSubmit}>
+        {editandoId !== null && <p className="hint">Editando medida de {form.data}.</p>}
+
         <label>
           Data
-          <input type="date" value={nova.data} onChange={(e) => setNova({ ...nova, data: e.target.value })} />
+          <input type="date" value={form.data} onChange={(e) => setForm({ ...form, data: e.target.value })} />
         </label>
 
         {CAMPOS.map(({ chave, rotulo }) => (
@@ -71,24 +90,35 @@ export function MedidasPage() {
             <input
               type="number"
               step="0.1"
-              value={(nova[chave] as number | null) ?? ''}
-              onChange={(e) =>
-                setNova({ ...nova, [chave]: e.target.value ? Number(e.target.value) : null })
-              }
+              value={(form[chave] as number | null) ?? ''}
+              onChange={(e) => setForm({ ...form, [chave]: e.target.value ? Number(e.target.value) : null })}
             />
           </label>
         ))}
 
-        <button type="submit">Registrar medida</button>
+        <div className="botoes-linha">
+          <button type="submit">{editandoId !== null ? 'Salvar alterações' : 'Registrar medida'}</button>
+          {editandoId !== null && (
+            <button type="button" onClick={cancelarEdicao}>
+              Cancelar
+            </button>
+          )}
+        </div>
       </form>
 
       <ul className="list">
         {medidas.map((m) => (
-          <li key={m.id}>
-            <span>
+          <li key={m.id} className={m.id === editandoId ? 'list-item-ativo' : undefined}>
+            <button className="list-item-conteudo" onClick={() => iniciarEdicao(m)}>
               {m.data} — {m.peso_kg ?? '—'} kg
-            </span>
-            <button className="link-danger" onClick={() => handleDelete(m.id)}>
+            </button>
+            <button
+              className="link-danger"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleDelete(m.id)
+              }}
+            >
               excluir
             </button>
           </li>

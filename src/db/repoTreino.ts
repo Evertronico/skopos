@@ -1,12 +1,15 @@
 import { query, queryOne, run } from './database'
-import type { ExecucaoExercicio, ExercicioPlano, PlanoTreino, RegistroTreino } from './types'
+import type { DiaPlano, DiaSemana, ExecucaoExercicio, ExercicioPlano, PlanoTreino, RegistroTreino } from './types'
 
 export async function listPlanos(): Promise<PlanoTreino[]> {
   return query<PlanoTreino>('SELECT * FROM planos_treino ORDER BY ativo DESC, id DESC')
 }
 
 export async function createPlano(nome: string): Promise<number> {
-  await run('INSERT INTO planos_treino (nome, ativo) VALUES (?, 1)', [nome])
+  await run('INSERT INTO planos_treino (nome, ativo, criado_em) VALUES (?, 1, ?)', [
+    nome,
+    new Date().toISOString().slice(0, 10),
+  ])
   const row = await queryOne<{ id: number }>('SELECT last_insert_rowid() as id')
   return row!.id
 }
@@ -15,19 +18,37 @@ export async function deletePlano(id: number): Promise<void> {
   await run('DELETE FROM planos_treino WHERE id = ?', [id])
 }
 
-export async function listExerciciosDoPlano(planoId: number): Promise<ExercicioPlano[]> {
+export async function listDiasDoPlano(planoId: number): Promise<DiaPlano[]> {
+  return query<DiaPlano>('SELECT * FROM dias_plano WHERE plano_id = ? ORDER BY dia_semana ASC', [planoId])
+}
+
+export async function addDiaAoPlano(planoId: number, diaSemana: DiaSemana, nome: string | null): Promise<number> {
+  await run('INSERT INTO dias_plano (plano_id, dia_semana, nome) VALUES (?, ?, ?)', [
+    planoId,
+    diaSemana,
+    nome,
+  ])
+  const row = await queryOne<{ id: number }>('SELECT last_insert_rowid() as id')
+  return row!.id
+}
+
+export async function deleteDiaDoPlano(id: number): Promise<void> {
+  await run('DELETE FROM dias_plano WHERE id = ?', [id])
+}
+
+export async function listExerciciosDoDia(diaPlanoId: number): Promise<ExercicioPlano[]> {
   return query<ExercicioPlano>(
-    'SELECT * FROM exercicios_plano WHERE plano_id = ? ORDER BY ordem ASC, id ASC',
-    [planoId],
+    'SELECT * FROM exercicios_plano WHERE dia_plano_id = ? ORDER BY ordem ASC, id ASC',
+    [diaPlanoId],
   )
 }
 
-export async function addExercicioAoPlano(exercicio: Omit<ExercicioPlano, 'id'>): Promise<void> {
+export async function addExercicioAoDia(exercicio: Omit<ExercicioPlano, 'id'>): Promise<void> {
   await run(
-    `INSERT INTO exercicios_plano (plano_id, nome, ordem, series, repeticoes, carga_kg, descanso_seg)
+    `INSERT INTO exercicios_plano (dia_plano_id, nome, ordem, series, repeticoes, carga_kg, descanso_seg)
      VALUES (?, ?, ?, ?, ?, ?, ?)`,
     [
-      exercicio.plano_id,
+      exercicio.dia_plano_id,
       exercicio.nome,
       exercicio.ordem,
       exercicio.series,
@@ -38,22 +59,23 @@ export async function addExercicioAoPlano(exercicio: Omit<ExercicioPlano, 'id'>)
   )
 }
 
-export async function deleteExercicioDoPlano(id: number): Promise<void> {
+export async function deleteExercicioDoDia(id: number): Promise<void> {
   await run('DELETE FROM exercicios_plano WHERE id = ?', [id])
 }
 
-export async function iniciarRegistroTreino(planoId: number, data: string): Promise<number> {
+/** Recupera (ou cria) o registro de execução de um dia da ficha numa data específica, semeado com os exercícios planejados. */
+export async function iniciarRegistroTreino(diaPlanoId: number, data: string): Promise<number> {
   const existente = await queryOne<RegistroTreino>(
-    'SELECT * FROM registros_treino WHERE plano_id = ? AND data = ?',
-    [planoId, data],
+    'SELECT * FROM registros_treino WHERE dia_plano_id = ? AND data = ?',
+    [diaPlanoId, data],
   )
   if (existente) return existente.id
 
-  await run('INSERT INTO registros_treino (plano_id, data) VALUES (?, ?)', [planoId, data])
+  await run('INSERT INTO registros_treino (dia_plano_id, data) VALUES (?, ?)', [diaPlanoId, data])
   const row = await queryOne<{ id: number }>('SELECT last_insert_rowid() as id')
   const registroId = row!.id
 
-  const exercicios = await listExerciciosDoPlano(planoId)
+  const exercicios = await listExerciciosDoDia(diaPlanoId)
   for (const ex of exercicios) {
     await run(
       `INSERT INTO execucoes_exercicio
@@ -73,6 +95,27 @@ export async function listExecucoes(registroTreinoId: number): Promise<ExecucaoE
   )
 }
 
+/** Adiciona um exercício avulso ao registro do dia — feito mas não previsto na ficha original. */
+export async function adicionarExecucaoAvulsa(
+  registroTreinoId: number,
+  nome: string,
+  campos: Partial<Pick<ExecucaoExercicio, 'series_feitas' | 'repeticoes_feitas' | 'carga_kg' | 'descanso_seg'>>,
+): Promise<void> {
+  await run(
+    `INSERT INTO execucoes_exercicio
+       (registro_treino_id, exercicio_plano_id, nome, series_feitas, repeticoes_feitas, carga_kg, descanso_seg, concluido)
+     VALUES (?, NULL, ?, ?, ?, ?, ?, 1)`,
+    [
+      registroTreinoId,
+      nome,
+      campos.series_feitas ?? null,
+      campos.repeticoes_feitas ?? null,
+      campos.carga_kg ?? null,
+      campos.descanso_seg ?? null,
+    ],
+  )
+}
+
 export async function atualizarExecucao(
   id: number,
   campos: Partial<Pick<ExecucaoExercicio, 'series_feitas' | 'repeticoes_feitas' | 'carga_kg' | 'descanso_seg' | 'concluido'>>,
@@ -88,5 +131,12 @@ export async function listRegistrosTreino(dias = 14): Promise<RegistroTreino[]> 
   return query<RegistroTreino>(
     `SELECT * FROM registros_treino WHERE data >= date('now', ?) ORDER BY data DESC`,
     [`-${dias} days`],
+  )
+}
+
+export async function listHistoricoDoDia(diaPlanoId: number, limite = 10): Promise<RegistroTreino[]> {
+  return query<RegistroTreino>(
+    'SELECT * FROM registros_treino WHERE dia_plano_id = ? ORDER BY data DESC LIMIT ?',
+    [diaPlanoId, limite],
   )
 }

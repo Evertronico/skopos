@@ -8,13 +8,13 @@ import { TreinoPage } from './features/treino/TreinoPage'
 
 type Aba = 'dashboard' | 'medidas' | 'treino' | 'nutricao' | 'perfil' | 'backup'
 
-const ABAS: { chave: Aba; rotulo: string }[] = [
-  { chave: 'dashboard', rotulo: 'Dashboard' },
-  { chave: 'medidas', rotulo: 'Medidas' },
-  { chave: 'treino', rotulo: 'Treino' },
-  { chave: 'nutricao', rotulo: 'Nutrição' },
-  { chave: 'perfil', rotulo: 'Perfil' },
-  { chave: 'backup', rotulo: 'Backup' },
+const ABAS: { chave: Aba; rotulo: string; icone: string }[] = [
+  { chave: 'dashboard', rotulo: 'Dashboard', icone: '📊' },
+  { chave: 'medidas', rotulo: 'Medidas', icone: '📏' },
+  { chave: 'treino', rotulo: 'Treino', icone: '🏋️' },
+  { chave: 'nutricao', rotulo: 'Nutrição', icone: '🥤' },
+  { chave: 'perfil', rotulo: 'Perfil', icone: '👤' },
+  { chave: 'backup', rotulo: 'Backup', icone: '☁️' },
 ]
 
 export default function App() {
@@ -36,13 +36,16 @@ export default function App() {
       </main>
 
       <nav className="app-nav">
-        {ABAS.map(({ chave, rotulo }) => (
+        {ABAS.map(({ chave, rotulo, icone }) => (
           <button
             key={chave}
             className={chave === aba ? 'nav-item active' : 'nav-item'}
             onClick={() => setAba(chave)}
           >
-            {rotulo}
+            <span className="nav-icon" aria-hidden="true">
+              {icone}
+            </span>
+            <span>{rotulo}</span>
           </button>
         ))}
       </nav>

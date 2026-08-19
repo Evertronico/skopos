@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { RadarChart } from '../../components/RadarChart'
 import { listMedidas } from '../../db/repoMedidas'
 import { getPerfil } from '../../db/repoPerfil'
+import { getPlanoNutricional } from '../../db/repoPlanoNutricional'
 import { listHidratacao, listNutricao, listSono } from '../../db/repoRegistros'
 import { listExecucoes, listRegistrosTreino } from '../../db/repoTreino'
 import type { MedidaAntropometrica, Perfil } from '../../db/types'
@@ -26,9 +27,10 @@ export function DashboardPage() {
 
   useEffect(() => {
     async function carregar() {
-      const [perfil, medidas, treinos14, hidratacao14, sono14, nutricao14] = await Promise.all([
+      const [perfil, medidas, planoNutricional, treinos14, hidratacao14, sono14, nutricao14] = await Promise.all([
         getPerfil(),
         listMedidas(),
+        getPlanoNutricional(),
         listRegistrosTreino(14),
         listHidratacao(14),
         listSono(14),
@@ -41,7 +43,16 @@ export function DashboardPage() {
       }
 
       const pesoHoje = encontrarPesoProximo(medidas, todayISO())
-      const metas = pesoHoje ? calcularMetas(perfil as Perfil, pesoHoje) : null
+      const metasCalculadas = pesoHoje ? calcularMetas(perfil as Perfil, pesoHoje) : null
+      const metas =
+        planoNutricional?.calorias && planoNutricional.agua_ml && planoNutricional.sono_horas
+          ? {
+              calorias: planoNutricional.calorias,
+              proteina_g: planoNutricional.proteina_g ?? 0,
+              agua_ml: planoNutricional.agua_ml,
+              sono_horas: planoNutricional.sono_horas,
+            }
+          : metasCalculadas
 
       const execucoesPorRegistro = await Promise.all(treinos14.map((r) => listExecucoes(r.id)))
       const treinosComExecucoes = treinos14.map((r, i) => ({ ...r, execucoes: execucoesPorRegistro[i] }))

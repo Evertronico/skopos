@@ -52,11 +52,22 @@ export interface PlanoTreino {
   id: number
   nome: string
   ativo: number
+  criado_em: string
+}
+
+/** 0 = domingo ... 6 = sábado (mesma convenção de Date.getDay()). */
+export type DiaSemana = 0 | 1 | 2 | 3 | 4 | 5 | 6
+
+export interface DiaPlano {
+  id: number
+  plano_id: number
+  dia_semana: DiaSemana
+  nome: string | null
 }
 
 export interface ExercicioPlano {
   id: number
-  plano_id: number
+  dia_plano_id: number
   nome: string
   ordem: number
   series: number | null
@@ -67,7 +78,7 @@ export interface ExercicioPlano {
 
 export interface RegistroTreino {
   id: number
-  plano_id: number | null
+  dia_plano_id: number
   data: string
 }
 
@@ -81,4 +92,13 @@ export interface ExecucaoExercicio {
   carga_kg: number | null
   descanso_seg: number | null
   concluido: number
+}
+
+export interface PlanoNutricional {
+  id: 1
+  calorias: number | null
+  proteina_g: number | null
+  agua_ml: number | null
+  sono_horas: number | null
+  criado_em: string | null
 }

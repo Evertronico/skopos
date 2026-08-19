@@ -1,9 +1,10 @@
 import initSqlJs, { type Database, type SqlJsStatic } from 'sql.js'
 import sqlWasmUrl from 'sql.js/dist/sql-wasm.wasm?url'
-import { get, set } from 'idb-keyval'
-import { SCHEMA_SQL } from './schema'
+import { del, get, set } from 'idb-keyval'
+import { SCHEMA_SQL, SCHEMA_VERSION } from './schema'
 
 const STORAGE_KEY = 'skopos-db'
+const VERSION_KEY = 'skopos-db-version'
 
 let sqlPromise: Promise<SqlJsStatic> | null = null
 let db: Database | null = null
@@ -20,7 +21,13 @@ export async function getDb(): Promise<Database> {
   if (db) return db
 
   const SQL = await getSql()
-  const existing = await get<Uint8Array>(STORAGE_KEY)
+  const storedVersion = await get<number>(VERSION_KEY)
+  const versionCompativel = storedVersion === SCHEMA_VERSION
+  const existing = versionCompativel ? await get<Uint8Array>(STORAGE_KEY) : undefined
+
+  if (!versionCompativel && storedVersion !== undefined) {
+    await del(STORAGE_KEY)
+  }
 
   db = existing ? new SQL.Database(existing) : new SQL.Database()
   db.run(SCHEMA_SQL)
@@ -33,6 +40,7 @@ async function persist(): Promise<void> {
   if (!db) return
   const bytes = db.export()
   await set(STORAGE_KEY, bytes)
+  await set(VERSION_KEY, SCHEMA_VERSION)
 }
 
 export function scheduleSave(): void {
@@ -89,7 +97,9 @@ const TABELAS = [
   'registros_hidratacao',
   'registros_sono',
   'registros_nutricao',
+  'planos_nutricionais',
   'planos_treino',
+  'dias_plano',
   'exercicios_plano',
   'registros_treino',
   'execucoes_exercicio',

@@ -59,15 +59,24 @@ body {
 
 .nav-item {
   flex: 1;
-  padding: 0.75rem 0.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.6rem 0.25rem;
   background: none;
   border: none;
   color: var(--text-muted);
-  font-size: 0.7rem;
+  font-size: 0.65rem;
 }
 
 .nav-item.active {
   color: var(--accent);
+}
+
+.nav-icon {
+  font-size: 1.15rem;
+  line-height: 1;
 }
 
 h2 {
@@ -121,9 +130,32 @@ button:disabled {
   padding: 0;
 }
 
+.link {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: inherit;
+  padding: 0;
+  text-decoration: underline;
+}
+
 .hint {
   color: var(--text-muted);
   font-size: 0.85rem;
+}
+
+.hint.aviso {
+  color: #fbbf24;
+}
+
+.badge {
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  background: var(--surface-alt);
+  color: var(--text-muted);
+  font-size: 0.65rem;
+  vertical-align: middle;
 }
 
 .erro {
@@ -148,6 +180,20 @@ button:disabled {
   padding: 0.5rem;
   background: var(--surface);
   border-radius: 0.4rem;
+}
+
+.list li.list-item-ativo {
+  outline: 1px solid var(--accent);
+}
+
+.list-item-conteudo {
+  flex: 1;
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--text);
+  padding: 0;
+  font-size: 1rem;
 }
 
 .list-compact li {
