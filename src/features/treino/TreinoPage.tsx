@@ -18,6 +18,7 @@ import {
 } from '../../db/repoTreino'
 import type { DiaPlano, DiaSemana, ExecucaoExercicio, ExercicioPlano, PlanoTreino, RegistroTreino } from '../../db/types'
 import { diasEntre, formatDataBR, NOME_DIA_SEMANA, ORDEM_DIAS_SEMANA, todayISO } from '../../lib/date'
+import { ExecucaoItem } from './ExecucaoItem'
 
 const EXERCICIO_VAZIO = { nome: '', series: 3, repeticoes: 10, carga_kg: 0, descanso_seg: 60 }
 const AVULSO_VAZIO = { nome: '', series_feitas: 3, repeticoes_feitas: 10, carga_kg: 0, descanso_seg: 60 }
@@ -442,46 +443,7 @@ export function TreinoPage() {
 
                   <ul className="list">
                     {execucoes.map((exec) => (
-                      <li key={exec.id} className="execucao-item">
-                        <label className="checkbox">
-                          <input
-                            type="checkbox"
-                            checked={exec.concluido === 1}
-                            onChange={(e) =>
-                              handleAtualizarExecucao(exec.id, { concluido: e.target.checked ? 1 : 0 })
-                            }
-                          />
-                          {exec.nome}
-                          {exec.exercicio_plano_id === null && <span className="badge">extra</span>}
-                        </label>
-                        <div className="execucao-campos">
-                          <input
-                            type="number"
-                            aria-label="séries feitas"
-                            value={exec.series_feitas ?? ''}
-                            onChange={(e) =>
-                              handleAtualizarExecucao(exec.id, { series_feitas: Number(e.target.value) })
-                            }
-                          />
-                          <input
-                            type="number"
-                            aria-label="repetições feitas"
-                            value={exec.repeticoes_feitas ?? ''}
-                            onChange={(e) =>
-                              handleAtualizarExecucao(exec.id, { repeticoes_feitas: Number(e.target.value) })
-                            }
-                          />
-                          <input
-                            type="number"
-                            step="0.5"
-                            aria-label="carga usada"
-                            value={exec.carga_kg ?? ''}
-                            onChange={(e) =>
-                              handleAtualizarExecucao(exec.id, { carga_kg: Number(e.target.value) })
-                            }
-                          />
-                        </div>
-                      </li>
+                      <ExecucaoItem key={exec.id} exec={exec} onAtualizar={handleAtualizarExecucao} />
                     ))}
                   </ul>
 
