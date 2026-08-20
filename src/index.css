@@ -468,20 +468,6 @@ button:disabled {
   font-weight: 600;
 }
 
-.timer-loop-icone {
-  color: var(--highlight-text);
-  animation: girar 0.9s linear infinite;
-}
-
-@keyframes girar {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 @keyframes aparecer {
   from {
     opacity: 0;
@@ -609,31 +595,52 @@ input[type='checkbox'] {
   flex-shrink: 0;
 }
 
-/* Mensagem motivacional grande, exibida ao final de cada ciclo do cronômetro */
-.mensagem-motivacional {
-  width: 100%;
+/* Mensagem motivacional em tela cheia, exibida quando o descanso termina */
+.overlay-motivacional {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   text-align: center;
-  padding: 1.1rem 0.5rem;
-  border-radius: var(--radius-md);
-  background: var(--highlight-soft);
-  color: var(--highlight-text);
-  font-size: 1.5rem;
-  font-weight: 800;
-  animation: surgir 0.2s ease;
+  padding: 2rem;
+  background: rgba(4, 8, 20, 0.88);
+  backdrop-filter: blur(6px);
+  animation: surgir 0.15s ease;
 }
 
-.mensagem-motivacional.concluido {
-  background: var(--accent-soft);
+.overlay-texto {
+  font-size: 3.2rem;
+  font-weight: 900;
+  line-height: 1.1;
+  color: var(--highlight);
+  text-shadow: 0 0 40px var(--highlight-soft);
+  animation: piscar-forte 0.35s ease-in-out infinite;
+}
+
+.overlay-motivacional.concluido .overlay-texto {
   color: var(--accent);
+  text-shadow: 0 0 40px var(--accent-soft);
 }
 
 @keyframes surgir {
   from {
     opacity: 0;
-    transform: scale(0.9);
   }
   to {
     opacity: 1;
+  }
+}
+
+@keyframes piscar-forte {
+  0%,
+  100% {
+    opacity: 1;
     transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(1.08);
   }
 }

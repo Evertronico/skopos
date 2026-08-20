@@ -19,20 +19,6 @@ export function calcularIdade(dataNascimento: string): number {
   return idade
 }
 
-/** Taxa metabólica basal — fórmula de Mifflin-St Jeor. */
-export function calcularTMB(perfil: Perfil, pesoKg: number): number | null {
-  if (!perfil.data_nascimento || !perfil.altura_cm || !perfil.sexo) return null
-  const idade = calcularIdade(perfil.data_nascimento)
-  const base = 10 * pesoKg + 6.25 * perfil.altura_cm - 5 * idade
-  return perfil.sexo === 'M' ? base + 5 : base - 161
-}
-
-export function calcularGastoDiario(perfil: Perfil, pesoKg: number): number | null {
-  const tmb = calcularTMB(perfil, pesoKg)
-  if (tmb === null || !perfil.nivel_atividade) return null
-  return tmb * FATOR_ATIVIDADE[perfil.nivel_atividade]
-}
-
 const AJUSTE_CALORICO: Record<Objetivo, number> = {
   perda_peso: -500,
   ganho_massa: 300,
@@ -46,15 +32,28 @@ export interface MetasNutricionais {
   sono_horas: number
 }
 
-export function calcularMetas(perfil: Perfil, pesoKg: number): MetasNutricionais | null {
-  const gastoDiario = calcularGastoDiario(perfil, pesoKg)
-  if (gastoDiario === null || !perfil.objetivo) return null
-
-  const calorias = Math.round(gastoDiario + AJUSTE_CALORICO[perfil.objetivo])
-  const gramasProteinaPorKg = perfil.objetivo === 'ganho_massa' ? 2.0 : 1.6
-  const proteina_g = Math.round(pesoKg * gramasProteinaPorKg)
-  const agua_ml = Math.round(pesoKg * 35)
+/**
+ * Sempre retorna uma estimativa usável, mesmo com o perfil incompleto — usa médias populacionais
+ * como ponto de partida (peso 70kg, altura 170cm, atividade moderada, manutenção) e refina conforme
+ * o usuário preenche o perfil de verdade e registra o peso. Sem isso, metas nunca calculam e os
+ * eixos de hidratação/sono/nutrição do dashboard ficam travados em 0% pra sempre.
+ */
+export function calcularMetas(perfil: Perfil, pesoKg: number | null): MetasNutricionais {
+  const peso = pesoKg ?? 70
+  const altura = perfil.altura_cm ?? 170
+  const sexo = perfil.sexo ?? 'M'
+  const nivelAtividade = perfil.nivel_atividade ?? 'moderado'
+  const objetivo = perfil.objetivo ?? 'manutencao'
   const idade = perfil.data_nascimento ? calcularIdade(perfil.data_nascimento) : 30
+
+  const tmbBase = 10 * peso + 6.25 * altura - 5 * idade
+  const tmb = sexo === 'M' ? tmbBase + 5 : tmbBase - 161
+  const gastoDiario = tmb * FATOR_ATIVIDADE[nivelAtividade]
+
+  const calorias = Math.round(gastoDiario + AJUSTE_CALORICO[objetivo])
+  const gramasProteinaPorKg = objetivo === 'ganho_massa' ? 2.0 : 1.6
+  const proteina_g = Math.round(peso * gramasProteinaPorKg)
+  const agua_ml = Math.round(peso * 35)
   const sono_horas = idade <= 17 ? 9 : 8
 
   return { calorias, proteina_g, agua_ml, sono_horas }

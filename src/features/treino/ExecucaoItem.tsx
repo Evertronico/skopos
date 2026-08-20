@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { FloatingInput } from '../../components/FloatingInput'
-import { IconLoop, IconTimer } from '../../components/icons'
+import { IconTimer } from '../../components/icons'
 import { registrarLog } from '../../db/repoLogs'
 import type { ExecucaoExercicio } from '../../db/types'
 
@@ -10,20 +10,21 @@ type CamposEditaveis = Partial<
 
 interface Props {
   exec: ExecucaoExercicio
+  seriesPlanejadas: number | null
   onAtualizar: (id: number, campos: CamposEditaveis) => void
 }
 
 type Fase = 'idle' | 'contando' | 'mensagem' | 'concluido'
 
 const MENSAGENS = [
-  'Bora!',
-  'Vamos lá!',
-  'Bora crescer!',
-  'Mais um!',
-  'Você consegue!',
-  'Não para agora!',
-  'Isso aí!',
-  'Foco total!',
+  'BORA! 🔥',
+  'VAMOS LÁ! 💪',
+  'BORA CRESCER! 🚀',
+  'MAIS UMA! ⚡',
+  'VOCÊ CONSEGUE! 💥',
+  'NÃO PARA AGORA! 🔥',
+  'ISSO AÍ! 🎯',
+  'FOCO TOTAL! 💪',
 ]
 
 function mensagemAleatoria(): string {
@@ -34,14 +35,14 @@ function numeroOuNulo(valorTexto: string): number | null {
   return valorTexto === '' ? null : Number(valorTexto)
 }
 
-export function ExecucaoItem({ exec, onAtualizar }: Props) {
+export function ExecucaoItem({ exec, seriesPlanejadas, onAtualizar }: Props) {
   const [fase, setFase] = useState<Fase>('idle')
   const [contagem, setContagem] = useState<number | null>(null)
-  const [ciclo, setCiclo] = useState(0)
   const [mensagem, setMensagem] = useState('')
+  const [cronometroIniciado, setCronometroIniciado] = useState(false)
 
   const descansoSeg = exec.descanso_seg && exec.descanso_seg > 0 ? exec.descanso_seg : 60
-  const alvoCiclos = Math.max(1, exec.repeticoes_feitas ?? 1)
+  const alvoSeries = seriesPlanejadas && seriesPlanejadas > 0 ? seriesPlanejadas : 3
 
   // Tick da contagem regressiva, um por segundo.
   useEffect(() => {
@@ -50,18 +51,18 @@ export function ExecucaoItem({ exec, onAtualizar }: Props) {
     return () => clearTimeout(tick)
   }, [fase, contagem])
 
-  // Zerou: fecha o ciclo. Se ainda não bateu o alvo, prepara a mensagem de incentivo pra reiniciar o loop.
+  // Zerou: soma uma série. Se bateu o alvo, marca concluído; senão, só mostra o incentivo — não reinicia sozinho.
   useEffect(() => {
     if (fase !== 'contando' || contagem !== 0) return
 
-    const novoCiclo = ciclo + 1
-    setCiclo(novoCiclo)
-    void registrarLog('fim_cronometro', exec.registro_treino_id, `${exec.nome} · ciclo ${novoCiclo}`)
+    const novaSerie = (exec.series_feitas ?? 0) + 1
+    onAtualizar(exec.id, { series_feitas: novaSerie })
+    void registrarLog('fim_cronometro', exec.registro_treino_id, `${exec.nome} · série ${novaSerie}`)
 
-    if (novoCiclo >= alvoCiclos) {
+    if (novaSerie >= alvoSeries) {
       onAtualizar(exec.id, { concluido: 1 })
       void registrarLog('exercicio_concluido', exec.registro_treino_id, `${exec.nome} · automático`)
-      setMensagem('Exercício concluído! 💪')
+      setMensagem('EXERCÍCIO CONCLUÍDO! 🏆')
       setFase('concluido')
     } else {
       setMensagem(mensagemAleatoria())
@@ -70,30 +71,25 @@ export function ExecucaoItem({ exec, onAtualizar }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fase, contagem])
 
-  // Mensagem de incentivo some sozinha e reinicia o loop; mensagem de conclusão some e volta ao estado inicial.
+  // A mensagem some sozinha e volta pro estado inicial — o próximo descanso só começa com um novo clique.
   useEffect(() => {
-    if (fase === 'mensagem') {
-      const t = setTimeout(() => {
-        setContagem(descansoSeg)
-        setFase('contando')
-        void registrarLog('inicio_cronometro', exec.registro_treino_id, `${exec.nome} · ciclo ${ciclo + 1}`)
-      }, 1600)
-      return () => clearTimeout(t)
-    }
-    if (fase === 'concluido') {
-      const t = setTimeout(() => {
-        setFase('idle')
-        setContagem(null)
-      }, 2200)
-      return () => clearTimeout(t)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (fase !== 'mensagem' && fase !== 'concluido') return
+    const t = setTimeout(() => {
+      setFase('idle')
+      setContagem(null)
+    }, 1800)
+    return () => clearTimeout(t)
   }, [fase])
 
   async function iniciar() {
     await registrarLog('inicio_atividade', exec.registro_treino_id, exec.nome)
-    await registrarLog('inicio_cronometro', exec.registro_treino_id, `${exec.nome} · ciclo 1`)
-    setCiclo(0)
+    await registrarLog('inicio_cronometro', exec.registro_treino_id, exec.nome)
+    // A ficha pré-preenche séries feitas com o valor planejado; a primeira vez que o cronômetro
+    // roda pra este exercício, zera o contador pra ele subir 1 por vez até bater o alvo de verdade.
+    if (!cronometroIniciado) {
+      onAtualizar(exec.id, { series_feitas: 0 })
+      setCronometroIniciado(true)
+    }
     setContagem(descansoSeg)
     setFase('contando')
   }
@@ -101,48 +97,45 @@ export function ExecucaoItem({ exec, onAtualizar }: Props) {
   function cancelar() {
     setFase('idle')
     setContagem(null)
-    setCiclo(0)
   }
+
+  const jaConcluido = exec.concluido === 1
 
   return (
     <li className="execucao-item">
+      {(fase === 'mensagem' || fase === 'concluido') && (
+        <div className={fase === 'concluido' ? 'overlay-motivacional concluido' : 'overlay-motivacional'}>
+          <span className="overlay-texto">{mensagem}</span>
+        </div>
+      )}
+
       <div className="execucao-topo">
         <label className="checkbox">
           <input
             type="checkbox"
-            checked={exec.concluido === 1}
+            checked={jaConcluido}
             onChange={(e) => onAtualizar(exec.id, { concluido: e.target.checked ? 1 : 0 })}
           />
           {exec.nome}
           {exec.exercicio_plano_id === null && <span className="badge">extra</span>}
         </label>
 
-        {fase === 'idle' && (
-          <button type="button" className="timer-botao" onClick={iniciar} aria-label="Iniciar cronômetro">
+        {!jaConcluido && fase === 'idle' && (
+          <button type="button" className="timer-botao" onClick={iniciar} aria-label="Iniciar descanso">
             <IconTimer size={16} />
             {descansoSeg}s
           </button>
         )}
 
         {fase === 'contando' && (
-          <button type="button" className="timer-contagem" onClick={cancelar} aria-label="Cancelar cronômetro">
+          <button type="button" className="timer-contagem" onClick={cancelar} aria-label="Cancelar descanso">
             <span className="timer-numero">{contagem}</span>
-            {alvoCiclos > 1 && (
-              <span className="timer-ciclo">
-                {ciclo + 1}/{alvoCiclos}
-              </span>
-            )}
+            <span className="timer-ciclo">
+              série {(exec.series_feitas ?? 0) + 1}/{alvoSeries}
+            </span>
           </button>
         )}
-
-        {fase === 'mensagem' && <IconLoop size={20} className="timer-loop-icone" />}
       </div>
-
-      {(fase === 'mensagem' || fase === 'concluido') && (
-        <p className={fase === 'concluido' ? 'mensagem-motivacional concluido' : 'mensagem-motivacional'}>
-          {mensagem}
-        </p>
-      )}
 
       <div className="execucao-campos">
         <FloatingInput

@@ -54,8 +54,8 @@ export function NutricaoPage() {
       listNutricao(),
       listDescricoesRefeicoesSugeridas(),
     ])
-    const pesoAtual = medidas[0]?.peso_kg
-    if (perfil && pesoAtual) setMetasCalculadas(calcularMetas(perfil as Perfil, pesoAtual))
+    const pesoAtual = medidas.find((m) => m.peso_kg !== null)?.peso_kg ?? null
+    if (perfil) setMetasCalculadas(calcularMetas(perfil as Perfil, pesoAtual))
 
     if (plano) {
       setPlanoManual({
@@ -163,6 +163,9 @@ export function NutricaoPage() {
   const caloriasHojeTotal = nutricao
     .filter((r) => r.data === hoje)
     .reduce((soma, r) => soma + (r.calorias ?? 0), 0)
+  const proteinaHojeTotal = nutricao
+    .filter((r) => r.data === hoje)
+    .reduce((soma, r) => soma + (r.proteina_g ?? 0), 0)
   const sonoHoje = sono.find((r) => r.data === hoje)?.horas ?? null
 
   return (
@@ -194,6 +197,9 @@ export function NutricaoPage() {
               <div className="meta-card">
                 <span className="meta-valor">{metas.proteina_g}g</span>
                 <span className="meta-rotulo">proteína/dia</span>
+                {percentual(proteinaHojeTotal, metas.proteina_g) !== null && (
+                  <span className="badge">{percentual(proteinaHojeTotal, metas.proteina_g)}% hoje</span>
+                )}
               </div>
               <div className="meta-card">
                 <span className="meta-valor">{metas.agua_ml}ml</span>

@@ -501,7 +501,14 @@ export function TreinoPage() {
 
                   <ul className="list">
                     {execucoes.map((exec) => (
-                      <ExecucaoItem key={exec.id} exec={exec} onAtualizar={handleAtualizarExecucao} />
+                      <ExecucaoItem
+                        key={exec.id}
+                        exec={exec}
+                        seriesPlanejadas={
+                          exercicios.find((ex) => ex.id === exec.exercicio_plano_id)?.series ?? null
+                        }
+                        onAtualizar={handleAtualizarExecucao}
+                      />
                     ))}
                   </ul>
 

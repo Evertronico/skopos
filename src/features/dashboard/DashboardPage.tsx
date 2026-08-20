@@ -44,7 +44,7 @@ export function DashboardPage() {
       }
 
       const pesoHoje = encontrarPesoProximo(medidas, todayISO())
-      const metasCalculadas = pesoHoje ? calcularMetas(perfil as Perfil, pesoHoje) : null
+      const metasCalculadas = calcularMetas(perfil as Perfil, pesoHoje)
       const metas =
         planoNutricional?.calorias && planoNutricional.agua_ml && planoNutricional.sono_horas
           ? {
