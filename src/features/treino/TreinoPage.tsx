@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { FloatingInput } from '../../components/FloatingInput'
-import { IconCalendar, IconCheck, IconDumbbell } from '../../components/icons'
+import { IconCalendar, IconCheck, IconDumbbell, IconTrash } from '../../components/icons'
 import { registrarLog } from '../../db/repoLogs'
 import {
   addDiaAoPlano,
@@ -283,8 +283,12 @@ export function TreinoPage() {
             <div className="card">
               <div className="section-header">
                 <span className="hint">Ficha criada em {formatDataBR(planoSelecionado.criado_em)}</span>
-                <button className="link-danger" onClick={() => handleExcluirPlano(planoSelecionado.id)}>
-                  excluir ficha
+                <button
+                  className="icon-danger"
+                  onClick={() => handleExcluirPlano(planoSelecionado.id)}
+                  aria-label="Excluir ficha"
+                >
+                  <IconTrash size={16} />
                 </button>
               </div>
 
@@ -359,8 +363,8 @@ export function TreinoPage() {
                   <IconDumbbell size={18} /> 2. Exercícios — {NOME_DIA_SEMANA[diaSelecionado.dia_semana]}
                   {diaSelecionado.nome ? ` · ${diaSelecionado.nome}` : ''}
                 </h3>
-                <button className="link-danger" onClick={() => handleExcluirDia(diaSelecionado.id)}>
-                  excluir dia
+                <button className="icon-danger" onClick={() => handleExcluirDia(diaSelecionado.id)} aria-label="Excluir dia">
+                  <IconTrash size={16} />
                 </button>
               </div>
 
@@ -375,8 +379,8 @@ export function TreinoPage() {
                       <span>
                         {ex.nome} — {ex.series}x{ex.repeticoes} @ {ex.carga_kg}kg, descanso {ex.descanso_seg}s
                       </span>
-                      <button className="link-danger" onClick={() => handleExcluirExercicio(ex.id)}>
-                        excluir
+                      <button className="icon-danger" onClick={() => handleExcluirExercicio(ex.id)} aria-label="Excluir exercício">
+                        <IconTrash size={16} />
                       </button>
                     </li>
                   ))}
@@ -479,8 +483,8 @@ export function TreinoPage() {
                             <button className="list-item-conteudo" onClick={() => abrirRegistro(h.data)}>
                               {formatDataBR(h.data)}
                             </button>
-                            <button className="link-danger" onClick={() => handleExcluirRegistro(h.id)}>
-                              excluir
+                            <button className="icon-danger" onClick={() => handleExcluirRegistro(h.id)} aria-label="Excluir treino">
+                              <IconTrash size={16} />
                             </button>
                           </li>
                         ))}
@@ -494,8 +498,12 @@ export function TreinoPage() {
                 <div className="execucao">
                   <div className="section-header">
                     <h4>Treino de {formatDataBR(dataRegistro)}</h4>
-                    <button className="link-danger" onClick={() => handleExcluirRegistro(registroAtivoId)}>
-                      excluir este registro
+                    <button
+                      className="icon-danger"
+                      onClick={() => handleExcluirRegistro(registroAtivoId)}
+                      aria-label="Excluir este registro"
+                    >
+                      <IconTrash size={16} />
                     </button>
                   </div>
 

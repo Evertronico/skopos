@@ -150,3 +150,64 @@ export function IconCheck({ size = 22, className }: IconProps) {
     </svg>
   )
 }
+
+export function IconTrash({ size = 22, className }: IconProps) {
+  return (
+    <svg {...base} width={size} height={size} className={className} aria-hidden="true">
+      <polyline points="3.5 6 5.5 6 20.5 6" />
+      <path d="M8 6V4a1.5 1.5 0 0 1 1.5-1.5h5A1.5 1.5 0 0 1 16 4v2" />
+      <path d="M6 6l1 14.5A1.5 1.5 0 0 0 8.5 22h7a1.5 1.5 0 0 0 1.5-1.5L18 6" />
+      <line x1="10" y1="10.5" x2="10" y2="17" />
+      <line x1="14" y1="10.5" x2="14" y2="17" />
+    </svg>
+  )
+}
+
+export function IconEdit({ size = 22, className }: IconProps) {
+  return (
+    <svg {...base} width={size} height={size} className={className} aria-hidden="true">
+      <path d="M4 20h4L18.5 9.5a2.1 2.1 0 0 0-3-3L5.5 16.5z" />
+      <line x1="14" y1="6" x2="18" y2="10" />
+    </svg>
+  )
+}
+
+export function IconSun({ size = 22, className }: IconProps) {
+  return (
+    <svg {...base} width={size} height={size} className={className} aria-hidden="true">
+      <circle cx="12" cy="12" r="4.5" />
+      <line x1="12" y1="1.5" x2="12" y2="4" />
+      <line x1="12" y1="20" x2="12" y2="22.5" />
+      <line x1="1.5" y1="12" x2="4" y2="12" />
+      <line x1="20" y1="12" x2="22.5" y2="12" />
+      <line x1="4.5" y1="4.5" x2="6.2" y2="6.2" />
+      <line x1="17.8" y1="17.8" x2="19.5" y2="19.5" />
+      <line x1="4.5" y1="19.5" x2="6.2" y2="17.8" />
+      <line x1="17.8" y1="6.2" x2="19.5" y2="4.5" />
+    </svg>
+  )
+}
+
+export function IconChevronDown({ size = 22, className }: IconProps) {
+  return (
+    <svg {...base} width={size} height={size} className={className} aria-hidden="true">
+      <polyline points="5 8.5 12 15.5 19 8.5" />
+    </svg>
+  )
+}
+
+export function IconChevronLeft({ size = 22, className }: IconProps) {
+  return (
+    <svg {...base} width={size} height={size} className={className} aria-hidden="true">
+      <polyline points="15 5 8 12 15 19" />
+    </svg>
+  )
+}
+
+export function IconChevronRight({ size = 22, className }: IconProps) {
+  return (
+    <svg {...base} width={size} height={size} className={className} aria-hidden="true">
+      <polyline points="9 5 16 12 9 19" />
+    </svg>
+  )
+}

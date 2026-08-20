@@ -1,11 +1,12 @@
-import type { InputHTMLAttributes } from 'react'
+import { useId, type InputHTMLAttributes } from 'react'
 
 interface Props extends InputHTMLAttributes<HTMLInputElement> {
   label: string
 }
 
 export function FloatingInput({ label, id, ...props }: Props) {
-  const inputId = id ?? `campo-${label.toLowerCase().replace(/\s+/g, '-')}`
+  const idGerado = useId()
+  const inputId = id ?? idGerado
   return (
     <div className="campo-flutuante">
       <input id={inputId} placeholder=" " {...props} />

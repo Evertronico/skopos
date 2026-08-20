@@ -26,6 +26,18 @@ export interface MedidaAntropometrica {
   pescoco_cm: number | null
 }
 
+export interface MetasMedidas {
+  id: 1
+  peso_kg: number | null
+  percentual_gordura: number | null
+  cintura_cm: number | null
+  quadril_cm: number | null
+  peito_cm: number | null
+  braco_cm: number | null
+  coxa_cm: number | null
+  pescoco_cm: number | null
+}
+
 export interface RegistroHidratacao {
   id: number
   data: string

@@ -28,8 +28,18 @@ const AJUSTE_CALORICO: Record<Objetivo, number> = {
 export interface MetasNutricionais {
   calorias: number
   proteina_g: number
+  carboidrato_g: number
+  gordura_g: number
   agua_ml: number
   sono_horas: number
+}
+
+/** Deriva metas de carboidrato/gordura a partir das calorias — 45% carbo, 25% gordura, o resto vem da proteína. */
+export function derivarMacros(calorias: number): { carboidrato_g: number; gordura_g: number } {
+  return {
+    carboidrato_g: Math.round((calorias * 0.45) / 4),
+    gordura_g: Math.round((calorias * 0.25) / 9),
+  }
 }
 
 /**
@@ -55,8 +65,9 @@ export function calcularMetas(perfil: Perfil, pesoKg: number | null): MetasNutri
   const proteina_g = Math.round(peso * gramasProteinaPorKg)
   const agua_ml = Math.round(peso * 35)
   const sono_horas = idade <= 17 ? 9 : 8
+  const { carboidrato_g, gordura_g } = derivarMacros(calorias)
 
-  return { calorias, proteina_g, agua_ml, sono_horas }
+  return { calorias, proteina_g, carboidrato_g, gordura_g, agua_ml, sono_horas }
 }
 
 export function calcularIMC(pesoKg: number, alturaCm: number): number {

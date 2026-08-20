@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 3
+export const SCHEMA_VERSION = 4
 
 export const SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS perfil (
@@ -46,6 +46,19 @@ CREATE TABLE IF NOT EXISTS registros_nutricao (
   proteina_g REAL,
   carboidrato_g REAL,
   gordura_g REAL
+);
+
+-- Medida pretendida por tipo de medida antropométrica (peso alvo, cintura alvo, etc), pra comparar com o registro mais recente.
+CREATE TABLE IF NOT EXISTS metas_medidas (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  peso_kg REAL,
+  percentual_gordura REAL,
+  cintura_cm REAL,
+  quadril_cm REAL,
+  peito_cm REAL,
+  braco_cm REAL,
+  coxa_cm REAL,
+  pescoco_cm REAL
 );
 
 -- Plano nutricional estabelecido (editável); quando ausente, o app usa metas calculadas do perfil.

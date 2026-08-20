@@ -106,6 +106,7 @@ export async function importDbFile(bytes: Uint8Array): Promise<void> {
 const TABELAS = [
   'perfil',
   'medidas_antropometricas',
+  'metas_medidas',
   'registros_hidratacao',
   'registros_sono',
   'registros_nutricao',

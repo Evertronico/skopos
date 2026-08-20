@@ -20,7 +20,31 @@
   --radius-md: 0.7rem;
   --radius-lg: 1rem;
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.24), 0 8px 20px -6px rgba(0, 0, 0, 0.35);
+  --nav-bg: rgba(20, 28, 48, 0.92);
   color-scheme: dark;
+}
+
+:root[data-theme='light'] {
+  --bg: #f4f6fb;
+  --surface: #ffffff;
+  --surface-alt: #eef1f8;
+  --surface-hover: #e3e8f4;
+  --border-subtle: rgba(15, 23, 42, 0.09);
+  --text: #101828;
+  --text-muted: #5b6478;
+  --accent: #3d5cee;
+  --accent-hover: #3049c9;
+  --accent-soft: rgba(61, 92, 238, 0.12);
+  --highlight: #00c97e;
+  --highlight-soft: rgba(0, 201, 126, 0.12);
+  --highlight-text: #00a868;
+  --warning: #b45309;
+  --warning-soft: rgba(180, 83, 9, 0.12);
+  --danger: #dc2626;
+  --danger-soft: rgba(220, 38, 38, 0.1);
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.06), 0 8px 20px -6px rgba(15, 23, 42, 0.12);
+  --nav-bg: rgba(255, 255, 255, 0.85);
+  color-scheme: light;
 }
 
 * {
@@ -61,9 +85,22 @@ body {
 }
 
 .app-title {
+  flex: 1;
   font-size: 1.25rem;
   font-weight: 800;
   letter-spacing: 0.01em;
+}
+
+.tema-botao {
+  background: none;
+  border: none;
+  padding: 0.35rem;
+  color: var(--text-muted);
+}
+
+.tema-botao:hover {
+  background: var(--surface-alt);
+  border-radius: var(--radius-sm);
 }
 
 .app-content {
@@ -81,7 +118,7 @@ body {
   max-width: 480px;
   margin: 0 auto;
   display: flex;
-  background: rgba(20, 28, 48, 0.92);
+  background: var(--nav-bg);
   backdrop-filter: blur(12px);
   border-top: 1px solid var(--border-subtle);
   padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -643,4 +680,179 @@ input[type='checkbox'] {
     opacity: 0.45;
     transform: scale(1.08);
   }
+}
+
+/* Score semanal */
+.score-semanal {
+  display: flex;
+  align-items: baseline;
+  gap: 0.2rem;
+}
+
+.score-numero {
+  font-size: 3rem;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--accent);
+}
+
+.score-max {
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* Card "Hoje": garrafinha + prato */
+.hoje-grid {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.garrafinha-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  flex-shrink: 0;
+}
+
+.garrafinha-contorno {
+  color: var(--text-muted);
+}
+
+.garrafinha-liquido {
+  fill: var(--accent);
+  transition: y 0.6s ease;
+}
+
+.garrafinha-percentual {
+  font-weight: 800;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.prato-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.9rem;
+}
+
+.anel-progresso {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.anel-circulo {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.4s ease;
+}
+
+.anel-centro {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.anel-label {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* Navegação de semana (gráfico de treinos) */
+.semana-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.semana-nav button {
+  background: none;
+  border: none;
+  padding: 0.2rem;
+  color: var(--text-muted);
+}
+
+.semana-nav button:hover {
+  background: var(--surface-alt);
+  border-radius: var(--radius-sm);
+}
+
+/* Ícone de remover no lugar de texto */
+.icon-danger {
+  background: none;
+  border: none;
+  padding: 0.2rem;
+  color: var(--danger);
+  flex-shrink: 0;
+}
+
+.icon-danger:hover {
+  background: var(--danger-soft);
+  border-radius: var(--radius-sm);
+}
+
+.icon-neutro {
+  background: none;
+  border: none;
+  padding: 0.2rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.icon-neutro:hover {
+  background: var(--surface-alt);
+  border-radius: var(--radius-sm);
+}
+
+/* Acordeão de histórico */
+.acordeao-cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.acordeao-cabecalho svg {
+  transition: transform 0.15s ease;
+}
+
+.acordeao-cabecalho.aberto svg {
+  transform: rotate(180deg);
+}
+
+.registro-linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.registro-linha .list-item-conteudo {
+  flex: 1;
+  text-align: left;
 }

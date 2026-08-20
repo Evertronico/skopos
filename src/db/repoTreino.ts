@@ -143,6 +143,13 @@ export async function listHistoricoDoDia(diaPlanoId: number, limite = 10): Promi
   )
 }
 
+export async function listRegistrosTreinoEntre(inicioISO: string, fimISO: string): Promise<RegistroTreino[]> {
+  return query<RegistroTreino>(
+    `SELECT * FROM registros_treino WHERE data >= ? AND data <= ? ORDER BY data ASC`,
+    [inicioISO, fimISO],
+  )
+}
+
 export async function deleteRegistroTreino(id: number): Promise<void> {
   await run('DELETE FROM registros_treino WHERE id = ?', [id])
 }
