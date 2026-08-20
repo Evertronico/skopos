@@ -36,8 +36,34 @@ export async function listNutricao(dias = 14): Promise<RegistroNutricao[]> {
 
 export async function addNutricao(registro: Omit<RegistroNutricao, 'id'>): Promise<void> {
   await run(
-    `INSERT INTO registros_nutricao (data, calorias, proteina_g, carboidrato_g, gordura_g)
-     VALUES (?, ?, ?, ?, ?)`,
-    [registro.data, registro.calorias, registro.proteina_g, registro.carboidrato_g, registro.gordura_g],
+    `INSERT INTO registros_nutricao (data, descricao, calorias, proteina_g, carboidrato_g, gordura_g)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [
+      registro.data,
+      registro.descricao,
+      registro.calorias,
+      registro.proteina_g,
+      registro.carboidrato_g,
+      registro.gordura_g,
+    ],
   )
+}
+
+/** Descrições de refeições já usadas antes, para sugerir autocomplete no formulário. */
+export async function listDescricoesRefeicoesSugeridas(): Promise<string[]> {
+  const linhas = await query<{ descricao: string }>(
+    `SELECT DISTINCT descricao FROM registros_nutricao
+     WHERE descricao IS NOT NULL AND descricao != ''
+     ORDER BY id DESC LIMIT 30`,
+  )
+  return linhas.map((l) => l.descricao)
+}
+
+/** Último registro com essa descrição exata (case-insensitive), para preencher calorias/proteína automaticamente. */
+export async function buscarUltimaRefeicaoPorDescricao(descricao: string): Promise<RegistroNutricao | null> {
+  const linhas = await query<RegistroNutricao>(
+    `SELECT * FROM registros_nutricao WHERE lower(descricao) = lower(?) ORDER BY id DESC LIMIT 1`,
+    [descricao.trim()],
+  )
+  return linhas[0] ?? null
 }

@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 2
+export const SCHEMA_VERSION = 3
 
 export const SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS perfil (
@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS registros_sono (
 CREATE TABLE IF NOT EXISTS registros_nutricao (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   data TEXT NOT NULL,
+  descricao TEXT,
   calorias INTEGER,
   proteina_g REAL,
   carboidrato_g REAL,
@@ -100,5 +101,14 @@ CREATE TABLE IF NOT EXISTS execucoes_exercicio (
   carga_kg REAL,
   descanso_seg INTEGER,
   concluido INTEGER DEFAULT 0
+);
+
+-- Trilha de eventos do treino (início/fim de sessão, cronômetro, conclusão de exercício) — usada para métricas futuras.
+CREATE TABLE IF NOT EXISTS logs_treino (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  registro_treino_id INTEGER REFERENCES registros_treino(id) ON DELETE CASCADE,
+  tipo TEXT NOT NULL,
+  detalhe TEXT,
+  criado_em TEXT NOT NULL
 );
 `

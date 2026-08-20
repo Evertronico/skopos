@@ -91,12 +91,24 @@ function migrarV1ParaV2(db: Database): void {
   db.run('DROP TABLE _old_planos_treino')
 }
 
+/** Schema v3 adicionou a descrição da refeição em registros_nutricao (coluna nova, aditiva). */
+function migrarV2ParaV3(db: Database): void {
+  db.run('ALTER TABLE registros_nutricao ADD COLUMN descricao TEXT')
+}
+
 /** Roda as migrações necessárias no banco aberto. Retorna true se algo foi alterado (precisa persistir). */
 export function runMigrations(db: Database): boolean {
-  if (!tableExists(db, 'exercicios_plano')) return false
-  if (tabelaTemColuna(db, 'exercicios_plano', 'plano_id')) {
+  let alterou = false
+
+  if (tableExists(db, 'exercicios_plano') && tabelaTemColuna(db, 'exercicios_plano', 'plano_id')) {
     migrarV1ParaV2(db)
-    return true
+    alterou = true
   }
-  return false
+
+  if (tableExists(db, 'registros_nutricao') && !tabelaTemColuna(db, 'registros_nutricao', 'descricao')) {
+    migrarV2ParaV3(db)
+    alterou = true
+  }
+
+  return alterou
 }

@@ -1,4 +1,7 @@
 import { useEffect, useState } from 'react'
+import { FloatingInput } from '../../components/FloatingInput'
+import { IconCalendar, IconCheck, IconDumbbell } from '../../components/icons'
+import { registrarLog } from '../../db/repoLogs'
 import {
   addDiaAoPlano,
   addExercicioAoDia,
@@ -207,6 +210,7 @@ export function TreinoPage() {
   }
 
   async function fecharRegistro() {
+    if (registroAtivoId !== null) await registrarLog('fim_treino', registroAtivoId)
     setRegistroAtivoId(null)
     setExecucoes([])
     if (diaSelecionadoId !== null) setHistorico(await listHistoricoDoDia(diaSelecionadoId))
@@ -291,7 +295,9 @@ export function TreinoPage() {
                 </p>
               )}
 
-              <h3>1. Dias de treino</h3>
+              <h3 className="card-title">
+                <IconCalendar size={18} /> 1. Dias de treino
+              </h3>
 
               {dias.length === 0 && (
                 <p className="hint">Nenhum dia adicionado ainda. Adicione o primeiro abaixo.</p>
@@ -349,8 +355,8 @@ export function TreinoPage() {
           {diaSelecionado && (
             <div className="card">
               <div className="section-header">
-                <h3>
-                  2. Exercícios — {NOME_DIA_SEMANA[diaSelecionado.dia_semana]}
+                <h3 className="card-title">
+                  <IconDumbbell size={18} /> 2. Exercícios — {NOME_DIA_SEMANA[diaSelecionado.dia_semana]}
                   {diaSelecionado.nome ? ` · ${diaSelecionado.nome}` : ''}
                 </h3>
                 <button className="link-danger" onClick={() => handleExcluirDia(diaSelecionado.id)}>
@@ -392,18 +398,16 @@ export function TreinoPage() {
                       autoFocus
                     />
                   </label>
-                  <label>
-                    Séries
-                    <input
+                  <div className="campos-grid">
+                    <FloatingInput
+                      label="Séries"
                       type="number"
                       inputMode="numeric"
                       value={novoExercicio.series}
                       onChange={(e) => setNovoExercicio({ ...novoExercicio, series: numeroOuVazio(e.target.value) })}
                     />
-                  </label>
-                  <label>
-                    Repetições
-                    <input
+                    <FloatingInput
+                      label="Repetições"
                       type="number"
                       inputMode="numeric"
                       value={novoExercicio.repeticoes}
@@ -411,10 +415,8 @@ export function TreinoPage() {
                         setNovoExercicio({ ...novoExercicio, repeticoes: numeroOuVazio(e.target.value) })
                       }
                     />
-                  </label>
-                  <label>
-                    Carga (kg)
-                    <input
+                    <FloatingInput
+                      label="Carga (kg)"
                       type="number"
                       inputMode="decimal"
                       step="0.5"
@@ -423,10 +425,8 @@ export function TreinoPage() {
                         setNovoExercicio({ ...novoExercicio, carga_kg: numeroOuVazio(e.target.value) })
                       }
                     />
-                  </label>
-                  <label>
-                    Descanso (seg)
-                    <input
+                    <FloatingInput
+                      label="Descanso (seg)"
                       type="number"
                       inputMode="numeric"
                       value={novoExercicio.descanso_seg}
@@ -434,7 +434,7 @@ export function TreinoPage() {
                         setNovoExercicio({ ...novoExercicio, descanso_seg: numeroOuVazio(e.target.value) })
                       }
                     />
-                  </label>
+                  </div>
                   <div className="botoes-linha">
                     <button type="submit" className="btn-primary">
                       Adicionar
@@ -450,7 +450,9 @@ export function TreinoPage() {
 
           {diaSelecionado && exercicios.length > 0 && (
             <div className="card">
-              <h3>3. Registrar treino</h3>
+              <h3 className="card-title">
+                <IconCheck size={18} /> 3. Registrar treino
+              </h3>
 
               {registroAtivoId === null && (
                 <>
@@ -519,29 +521,29 @@ export function TreinoPage() {
                         />
                       </label>
                       <div className="execucao-campos">
-                        <input
+                        <FloatingInput
+                          label="Séries"
                           type="number"
                           inputMode="numeric"
-                          aria-label="séries"
                           value={novoAvulso.series_feitas}
                           onChange={(e) =>
                             setNovoAvulso({ ...novoAvulso, series_feitas: numeroOuVazio(e.target.value) })
                           }
                         />
-                        <input
+                        <FloatingInput
+                          label="Repetições"
                           type="number"
                           inputMode="numeric"
-                          aria-label="repetições"
                           value={novoAvulso.repeticoes_feitas}
                           onChange={(e) =>
                             setNovoAvulso({ ...novoAvulso, repeticoes_feitas: numeroOuVazio(e.target.value) })
                           }
                         />
-                        <input
+                        <FloatingInput
+                          label="Carga (kg)"
                           type="number"
                           inputMode="decimal"
                           step="0.5"
-                          aria-label="carga"
                           value={novoAvulso.carga_kg}
                           onChange={(e) =>
                             setNovoAvulso({ ...novoAvulso, carga_kg: numeroOuVazio(e.target.value) })

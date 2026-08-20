@@ -42,6 +42,7 @@ export interface RegistroSono {
 export interface RegistroNutricao {
   id: number
   data: string
+  descricao: string | null
   calorias: number | null
   proteina_g: number | null
   carboidrato_g: number | null
@@ -101,4 +102,20 @@ export interface PlanoNutricional {
   agua_ml: number | null
   sono_horas: number | null
   criado_em: string | null
+}
+
+export type TipoLogTreino =
+  | 'inicio_treino'
+  | 'inicio_atividade'
+  | 'inicio_cronometro'
+  | 'fim_cronometro'
+  | 'exercicio_concluido'
+  | 'fim_treino'
+
+export interface LogTreino {
+  id: number
+  registro_treino_id: number | null
+  tipo: TipoLogTreino
+  detalhe: string | null
+  criado_em: string
 }

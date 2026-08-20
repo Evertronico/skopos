@@ -45,10 +45,24 @@ export function scheduleSave(): void {
   }, 300)
 }
 
+type OuvinteMudanca = () => void
+const ouvintesMudanca = new Set<OuvinteMudanca>()
+
+/** Assina notificações de qualquer escrita no banco (INSERT/UPDATE/DELETE), pra telas reagirem sem precisar remontar. */
+export function onDataChange(fn: OuvinteMudanca): () => void {
+  ouvintesMudanca.add(fn)
+  return () => ouvintesMudanca.delete(fn)
+}
+
+function notifyDataChange(): void {
+  ouvintesMudanca.forEach((fn) => fn())
+}
+
 export async function run(sql: string, params: (string | number | null)[] = []): Promise<void> {
   const database = await getDb()
   database.run(sql, params)
   scheduleSave()
+  notifyDataChange()
 }
 
 export async function query<T = Record<string, unknown>>(
@@ -86,6 +100,7 @@ export async function importDbFile(bytes: Uint8Array): Promise<void> {
   db.run(SCHEMA_SQL)
   db.run('PRAGMA foreign_keys = ON')
   await persist()
+  notifyDataChange()
 }
 
 const TABELAS = [
@@ -100,6 +115,7 @@ const TABELAS = [
   'exercicios_plano',
   'registros_treino',
   'execucoes_exercicio',
+  'logs_treino',
 ]
 
 export async function exportDbAsJson(): Promise<Record<string, unknown[]>> {

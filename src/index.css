@@ -1,16 +1,17 @@
 :root {
-  --bg: #0a0f1e;
-  --surface: #141c30;
-  --surface-alt: #1f2b47;
-  --surface-hover: #283a5e;
+  --bg: #090d1a;
+  --surface: #121a2c;
+  --surface-alt: #1b2540;
+  --surface-hover: #253258;
   --border-subtle: rgba(148, 163, 184, 0.12);
   --text: #f1f5f9;
   --text-muted: #8b98b8;
-  --accent: #4f7cff;
-  --accent-hover: #3d67e8;
-  --accent-soft: rgba(79, 124, 255, 0.16);
-  --success: #34d399;
-  --success-soft: rgba(52, 211, 153, 0.14);
+  --accent: #3d5cee;
+  --accent-hover: #3049c9;
+  --accent-soft: rgba(61, 92, 238, 0.18);
+  --highlight: #00ff97;
+  --highlight-soft: rgba(0, 255, 151, 0.14);
+  --highlight-text: #00e485;
   --warning: #fbbf24;
   --warning-soft: rgba(251, 191, 36, 0.14);
   --danger: #f87171;
@@ -416,9 +417,12 @@ button:disabled {
   width: 100%;
 }
 
-.execucao-campos input {
+.execucao-campos > .campo-flutuante {
   flex: 1;
   min-width: 0;
+}
+
+.execucao-campos input {
   text-align: center;
 }
 
@@ -436,13 +440,46 @@ button:disabled {
 }
 
 .timer-contagem {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
   flex-shrink: 0;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.timer-contagem:hover {
+  background: none;
+}
+
+.timer-numero {
   font-size: 2.2rem;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
-  color: var(--accent);
+  color: var(--highlight-text);
   line-height: 1;
   animation: aparecer 0.15s ease;
+}
+
+.timer-ciclo {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.timer-loop-icone {
+  color: var(--highlight-text);
+  animation: girar 0.9s linear infinite;
+}
+
+@keyframes girar {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes aparecer {
@@ -500,8 +537,8 @@ button:disabled {
 }
 
 .resultado-card.positivo {
-  background: var(--success-soft);
-  color: var(--success);
+  background: var(--highlight-soft);
+  color: var(--highlight-text);
 }
 
 .resultado-card.negativo {
@@ -512,4 +549,91 @@ button:disabled {
 .resultado-card.neutro {
   background: var(--surface-alt);
   color: var(--text-muted);
+}
+
+/* Título de card/seção com ícone */
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text);
+}
+
+.card-title svg {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+/* Floating label */
+.campo-flutuante {
+  position: relative;
+  width: 100%;
+}
+
+.campo-flutuante input {
+  width: 100%;
+  padding: 1rem 0.75rem 0.4rem;
+}
+
+.campo-flutuante label {
+  position: absolute;
+  left: 0.75rem;
+  top: 0.65rem;
+  font-size: 1rem;
+  color: var(--text-muted);
+  pointer-events: none;
+  transition: all 0.15s ease;
+  margin: 0;
+  font-weight: 400;
+}
+
+.campo-flutuante input:focus + label,
+.campo-flutuante input:not(:placeholder-shown) + label {
+  top: 0.15rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.campos-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+
+/* Checkbox maior e com cor de contraste quando marcado */
+input[type='checkbox'] {
+  width: 1.15rem;
+  height: 1.15rem;
+  accent-color: var(--highlight);
+  flex-shrink: 0;
+}
+
+/* Mensagem motivacional grande, exibida ao final de cada ciclo do cronômetro */
+.mensagem-motivacional {
+  width: 100%;
+  text-align: center;
+  padding: 1.1rem 0.5rem;
+  border-radius: var(--radius-md);
+  background: var(--highlight-soft);
+  color: var(--highlight-text);
+  font-size: 1.5rem;
+  font-weight: 800;
+  animation: surgir 0.2s ease;
+}
+
+.mensagem-motivacional.concluido {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+@keyframes surgir {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }

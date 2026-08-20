@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { RadarChart } from '../../components/RadarChart'
+import { onDataChange } from '../../db/database'
 import { listMedidas } from '../../db/repoMedidas'
 import { getPerfil } from '../../db/repoPerfil'
 import { getPlanoNutricional } from '../../db/repoPlanoNutricional'
@@ -110,6 +111,17 @@ export function DashboardPage() {
     }
 
     carregar()
+
+    let timer: ReturnType<typeof setTimeout> | null = null
+    const unsubscribe = onDataChange(() => {
+      if (timer) clearTimeout(timer)
+      timer = setTimeout(carregar, 400)
+    })
+
+    return () => {
+      if (timer) clearTimeout(timer)
+      unsubscribe()
+    }
   }, [])
 
   if (semDados) {

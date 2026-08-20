@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
+import { FloatingInput } from '../../components/FloatingInput'
 import { WeightChart } from '../../components/WeightChart'
+import { IconCalendar, IconCheck, IconRuler } from '../../components/icons'
 import { addMedida, deleteMedida, listMedidas, updateMedida } from '../../db/repoMedidas'
 import type { MedidaAntropometrica } from '../../db/types'
-import { todayISO } from '../../lib/date'
+import { formatDataBR, todayISO } from '../../lib/date'
 
 const CAMPOS: { chave: Exclude<keyof MedidaAntropometrica, 'id' | 'data'>; rotulo: string }[] = [
   { chave: 'peso_kg', rotulo: 'Peso (kg)' },
@@ -74,28 +76,39 @@ export function MedidasPage() {
     <div className="page">
       <h2>Medidas antropométricas</h2>
 
-      <WeightChart pontos={medidas} />
+      <div className="card">
+        <h3 className="card-title">
+          <IconRuler size={18} /> Evolução do peso
+        </h3>
+        <WeightChart pontos={medidas} />
+      </div>
 
-      <form className="form-page" onSubmit={handleSubmit}>
-        {editandoId !== null && <p className="hint">Editando medida de {form.data}.</p>}
+      <form className="card" onSubmit={handleSubmit}>
+        <h3 className="card-title">
+          <IconCheck size={18} /> {editandoId !== null ? 'Editar medida' : 'Nova medida'}
+        </h3>
+        {editandoId !== null && <p className="hint">Editando medida de {formatDataBR(form.data)}.</p>}
 
         <label>
-          Data
+          <span className="card-title">
+            <IconCalendar size={16} /> Data
+          </span>
           <input type="date" value={form.data} onChange={(e) => setForm({ ...form, data: e.target.value })} />
         </label>
 
-        {CAMPOS.map(({ chave, rotulo }) => (
-          <label key={chave}>
-            {rotulo}
-            <input
+        <div className="campos-grid">
+          {CAMPOS.map(({ chave, rotulo }) => (
+            <FloatingInput
+              key={chave}
+              label={rotulo}
               type="number"
               inputMode="decimal"
               step="0.1"
               value={(form[chave] as number | null) ?? ''}
               onChange={(e) => setForm({ ...form, [chave]: e.target.value ? Number(e.target.value) : null })}
             />
-          </label>
-        ))}
+          ))}
+        </div>
 
         <div className="botoes-linha">
           <button type="submit" className="btn-primary">
@@ -109,24 +122,27 @@ export function MedidasPage() {
         </div>
       </form>
 
-      <ul className="list">
-        {medidas.map((m) => (
-          <li key={m.id} className={m.id === editandoId ? 'list-item-ativo' : undefined}>
-            <button className="list-item-conteudo" onClick={() => iniciarEdicao(m)}>
-              {m.data} — {m.peso_kg ?? '—'} kg
-            </button>
-            <button
-              className="link-danger"
-              onClick={(e) => {
-                e.stopPropagation()
-                handleDelete(m.id)
-              }}
-            >
-              excluir
-            </button>
-          </li>
-        ))}
-      </ul>
+      <div className="card">
+        <h3>Histórico</h3>
+        <ul className="list">
+          {medidas.map((m) => (
+            <li key={m.id} className={m.id === editandoId ? 'list-item-ativo' : undefined}>
+              <button className="list-item-conteudo" onClick={() => iniciarEdicao(m)}>
+                {formatDataBR(m.data)} — {m.peso_kg ?? '—'} kg
+              </button>
+              <button
+                className="link-danger"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleDelete(m.id)
+                }}
+              >
+                excluir
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   )
 }

@@ -1,4 +1,5 @@
 import { query, queryOne, run } from './database'
+import { registrarLog } from './repoLogs'
 import type { DiaPlano, DiaSemana, ExecucaoExercicio, ExercicioPlano, PlanoTreino, RegistroTreino } from './types'
 
 export async function listPlanos(): Promise<PlanoTreino[]> {
@@ -74,6 +75,7 @@ export async function iniciarRegistroTreino(diaPlanoId: number, data: string): P
   await run('INSERT INTO registros_treino (dia_plano_id, data) VALUES (?, ?)', [diaPlanoId, data])
   const row = await queryOne<{ id: number }>('SELECT last_insert_rowid() as id')
   const registroId = row!.id
+  await registrarLog('inicio_treino', registroId, data)
 
   const exercicios = await listExerciciosDoDia(diaPlanoId)
   for (const ex of exercicios) {

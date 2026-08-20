@@ -94,3 +94,59 @@ export function IconTarget({ size = 22, className }: IconProps) {
     </svg>
   )
 }
+
+export function IconCalendar({ size = 22, className }: IconProps) {
+  return (
+    <svg {...base} width={size} height={size} className={className} aria-hidden="true">
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+      <line x1="8" y1="2.5" x2="8" y2="6.5" />
+      <line x1="16" y1="2.5" x2="16" y2="6.5" />
+    </svg>
+  )
+}
+
+export function IconHeart({ size = 22, className }: IconProps) {
+  return (
+    <svg {...base} width={size} height={size} className={className} aria-hidden="true">
+      <path d="M12 20.5s-7.5-4.7-9.8-9.4C.7 7.6 2.3 4 6 4c2 0 3.5 1.1 6 3.3C14.5 5.1 16 4 18 4c3.7 0 5.3 3.6 3.8 7.1C19.5 15.8 12 20.5 12 20.5z" />
+    </svg>
+  )
+}
+
+export function IconUtensils({ size = 22, className }: IconProps) {
+  return (
+    <svg {...base} width={size} height={size} className={className} aria-hidden="true">
+      <path d="M6 2.5v8a1.5 1.5 0 0 0 3 0v-8" />
+      <line x1="7.5" y1="2.5" x2="7.5" y2="21.5" />
+      <path d="M17 2.5c-2 0-3 2-3 5s1 4 3 4v10" />
+    </svg>
+  )
+}
+
+export function IconMoon({ size = 22, className }: IconProps) {
+  return (
+    <svg {...base} width={size} height={size} className={className} aria-hidden="true">
+      <path d="M20 14.2A8.5 8.5 0 1 1 9.8 4a7 7 0 0 0 10.2 10.2z" />
+    </svg>
+  )
+}
+
+export function IconLoop({ size = 22, className }: IconProps) {
+  return (
+    <svg {...base} width={size} height={size} className={className} aria-hidden="true">
+      <path d="M4 12a8 8 0 0 1 14-5.3" />
+      <polyline points="18 2 18 7 13 7" />
+      <path d="M20 12a8 8 0 0 1-14 5.3" />
+      <polyline points="6 22 6 17 11 17" />
+    </svg>
+  )
+}
+
+export function IconCheck({ size = 22, className }: IconProps) {
+  return (
+    <svg {...base} width={size} height={size} className={className} aria-hidden="true">
+      <polyline points="4 12.5 9.5 18 20 5" />
+    </svg>
+  )
+}
