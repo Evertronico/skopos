@@ -3,18 +3,32 @@ import type { RegistroHidratacao, RegistroNutricao, RegistroSono } from './types
 
 export async function listHidratacao(dias = 14): Promise<RegistroHidratacao[]> {
   return query<RegistroHidratacao>(
-    `SELECT * FROM registros_hidratacao WHERE data >= date('now', ?) ORDER BY data DESC`,
+    `SELECT * FROM registros_hidratacao WHERE data >= date('now', ?) ORDER BY data DESC, hora DESC`,
     [`-${dias} days`],
   )
 }
 
-export async function addHidratacao(data: string, mlConsumido: number): Promise<void> {
-  await run(`INSERT INTO registros_hidratacao (data, ml_consumido) VALUES (?, ?)`, [data, mlConsumido])
+export async function listHidratacaoDoDia(data: string): Promise<RegistroHidratacao[]> {
+  return query<RegistroHidratacao>('SELECT * FROM registros_hidratacao WHERE data = ? ORDER BY hora DESC', [data])
 }
 
-export async function updateHidratacao(id: number, data: string, mlConsumido: number): Promise<void> {
-  await run(`UPDATE registros_hidratacao SET data = ?, ml_consumido = ? WHERE id = ?`, [
+export async function addHidratacao(data: string, hora: string | null, mlConsumido: number): Promise<void> {
+  await run(`INSERT INTO registros_hidratacao (data, hora, ml_consumido) VALUES (?, ?, ?)`, [
     data,
+    hora,
+    mlConsumido,
+  ])
+}
+
+export async function updateHidratacao(
+  id: number,
+  data: string,
+  hora: string | null,
+  mlConsumido: number,
+): Promise<void> {
+  await run(`UPDATE registros_hidratacao SET data = ?, hora = ?, ml_consumido = ? WHERE id = ?`, [
+    data,
+    hora,
     mlConsumido,
     id,
   ])
@@ -26,22 +40,39 @@ export async function deleteHidratacao(id: number): Promise<void> {
 
 export async function listSono(dias = 14): Promise<RegistroSono[]> {
   return query<RegistroSono>(
-    `SELECT * FROM registros_sono WHERE data >= date('now', ?) ORDER BY data DESC`,
+    `SELECT * FROM registros_sono WHERE data >= date('now', ?) ORDER BY data DESC, hora DESC`,
     [`-${dias} days`],
   )
 }
 
-export async function addSono(data: string, horas: number, qualidade: number | null): Promise<void> {
-  await run(`INSERT INTO registros_sono (data, horas, qualidade) VALUES (?, ?, ?)`, [
+export async function listSonoDoDia(data: string): Promise<RegistroSono[]> {
+  return query<RegistroSono>('SELECT * FROM registros_sono WHERE data = ? ORDER BY hora DESC', [data])
+}
+
+export async function addSono(
+  data: string,
+  hora: string | null,
+  horas: number,
+  qualidade: number | null,
+): Promise<void> {
+  await run(`INSERT INTO registros_sono (data, hora, horas, qualidade) VALUES (?, ?, ?, ?)`, [
     data,
+    hora,
     horas,
     qualidade,
   ])
 }
 
-export async function updateSono(id: number, data: string, horas: number, qualidade: number | null): Promise<void> {
-  await run(`UPDATE registros_sono SET data = ?, horas = ?, qualidade = ? WHERE id = ?`, [
+export async function updateSono(
+  id: number,
+  data: string,
+  hora: string | null,
+  horas: number,
+  qualidade: number | null,
+): Promise<void> {
+  await run(`UPDATE registros_sono SET data = ?, hora = ?, horas = ?, qualidade = ? WHERE id = ?`, [
     data,
+    hora,
     horas,
     qualidade,
     id,
@@ -54,17 +85,22 @@ export async function deleteSono(id: number): Promise<void> {
 
 export async function listNutricao(dias = 14): Promise<RegistroNutricao[]> {
   return query<RegistroNutricao>(
-    `SELECT * FROM registros_nutricao WHERE data >= date('now', ?) ORDER BY data DESC`,
+    `SELECT * FROM registros_nutricao WHERE data >= date('now', ?) ORDER BY data DESC, hora DESC`,
     [`-${dias} days`],
   )
 }
 
+export async function listNutricaoDoDia(data: string): Promise<RegistroNutricao[]> {
+  return query<RegistroNutricao>('SELECT * FROM registros_nutricao WHERE data = ? ORDER BY hora DESC', [data])
+}
+
 export async function addNutricao(registro: Omit<RegistroNutricao, 'id'>): Promise<void> {
   await run(
-    `INSERT INTO registros_nutricao (data, descricao, calorias, proteina_g, carboidrato_g, gordura_g)
-     VALUES (?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO registros_nutricao (data, hora, descricao, calorias, proteina_g, carboidrato_g, gordura_g)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
     [
       registro.data,
+      registro.hora,
       registro.descricao,
       registro.calorias,
       registro.proteina_g,
@@ -77,10 +113,11 @@ export async function addNutricao(registro: Omit<RegistroNutricao, 'id'>): Promi
 export async function updateNutricao(id: number, registro: Omit<RegistroNutricao, 'id'>): Promise<void> {
   await run(
     `UPDATE registros_nutricao
-     SET data = ?, descricao = ?, calorias = ?, proteina_g = ?, carboidrato_g = ?, gordura_g = ?
+     SET data = ?, hora = ?, descricao = ?, calorias = ?, proteina_g = ?, carboidrato_g = ?, gordura_g = ?
      WHERE id = ?`,
     [
       registro.data,
+      registro.hora,
       registro.descricao,
       registro.calorias,
       registro.proteina_g,

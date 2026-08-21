@@ -96,6 +96,24 @@ function migrarV2ParaV3(db: Database): void {
   db.run('ALTER TABLE registros_nutricao ADD COLUMN descricao TEXT')
 }
 
+/** Schema v5 adicionou hora (data + hora em vez de só data) e macros no plano nutricional — tudo aditivo. */
+function migrarV4ParaV5(db: Database): void {
+  const comHora = ['medidas_antropometricas', 'registros_hidratacao', 'registros_sono', 'registros_nutricao', 'registros_treino']
+  for (const tabela of comHora) {
+    if (tableExists(db, tabela) && !tabelaTemColuna(db, tabela, 'hora')) {
+      db.run(`ALTER TABLE ${tabela} ADD COLUMN hora TEXT`)
+    }
+  }
+  if (tableExists(db, 'planos_nutricionais')) {
+    if (!tabelaTemColuna(db, 'planos_nutricionais', 'carboidrato_g')) {
+      db.run('ALTER TABLE planos_nutricionais ADD COLUMN carboidrato_g REAL')
+    }
+    if (!tabelaTemColuna(db, 'planos_nutricionais', 'gordura_g')) {
+      db.run('ALTER TABLE planos_nutricionais ADD COLUMN gordura_g REAL')
+    }
+  }
+}
+
 /** Roda as migrações necessárias no banco aberto. Retorna true se algo foi alterado (precisa persistir). */
 export function runMigrations(db: Database): boolean {
   let alterou = false
@@ -107,6 +125,11 @@ export function runMigrations(db: Database): boolean {
 
   if (tableExists(db, 'registros_nutricao') && !tabelaTemColuna(db, 'registros_nutricao', 'descricao')) {
     migrarV2ParaV3(db)
+    alterou = true
+  }
+
+  if (tableExists(db, 'medidas_antropometricas') && !tabelaTemColuna(db, 'medidas_antropometricas', 'hora')) {
+    migrarV4ParaV5(db)
     alterou = true
   }
 

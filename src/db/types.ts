@@ -16,6 +16,7 @@ export interface Perfil {
 export interface MedidaAntropometrica {
   id: number
   data: string
+  hora: string | null
   peso_kg: number | null
   percentual_gordura: number | null
   cintura_cm: number | null
@@ -41,12 +42,14 @@ export interface MetasMedidas {
 export interface RegistroHidratacao {
   id: number
   data: string
+  hora: string | null
   ml_consumido: number
 }
 
 export interface RegistroSono {
   id: number
   data: string
+  hora: string | null
   horas: number
   qualidade: number | null
 }
@@ -54,6 +57,7 @@ export interface RegistroSono {
 export interface RegistroNutricao {
   id: number
   data: string
+  hora: string | null
   descricao: string | null
   calorias: number | null
   proteina_g: number | null
@@ -93,6 +97,7 @@ export interface RegistroTreino {
   id: number
   dia_plano_id: number
   data: string
+  hora: string | null
 }
 
 export interface ExecucaoExercicio {
@@ -111,6 +116,8 @@ export interface PlanoNutricional {
   id: 1
   calorias: number | null
   proteina_g: number | null
+  carboidrato_g: number | null
+  gordura_g: number | null
   agua_ml: number | null
   sono_horas: number | null
   criado_em: string | null

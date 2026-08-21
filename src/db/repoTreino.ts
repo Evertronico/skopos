@@ -1,4 +1,5 @@
 import { query, queryOne, run } from './database'
+import { nowHHMM, todayISO } from '../lib/date'
 import { registrarLog } from './repoLogs'
 import type { DiaPlano, DiaSemana, ExecucaoExercicio, ExercicioPlano, PlanoTreino, RegistroTreino } from './types'
 
@@ -7,12 +8,13 @@ export async function listPlanos(): Promise<PlanoTreino[]> {
 }
 
 export async function createPlano(nome: string): Promise<number> {
-  await run('INSERT INTO planos_treino (nome, ativo, criado_em) VALUES (?, 1, ?)', [
-    nome,
-    new Date().toISOString().slice(0, 10),
-  ])
+  await run('INSERT INTO planos_treino (nome, ativo, criado_em) VALUES (?, 1, ?)', [nome, todayISO()])
   const row = await queryOne<{ id: number }>('SELECT last_insert_rowid() as id')
   return row!.id
+}
+
+export async function updatePlano(id: number, nome: string): Promise<void> {
+  await run('UPDATE planos_treino SET nome = ? WHERE id = ?', [nome, id])
 }
 
 export async function deletePlano(id: number): Promise<void> {
@@ -31,6 +33,10 @@ export async function addDiaAoPlano(planoId: number, diaSemana: DiaSemana, nome:
   ])
   const row = await queryOne<{ id: number }>('SELECT last_insert_rowid() as id')
   return row!.id
+}
+
+export async function updateDiaDoPlano(id: number, diaSemana: DiaSemana, nome: string | null): Promise<void> {
+  await run('UPDATE dias_plano SET dia_semana = ?, nome = ? WHERE id = ?', [diaSemana, nome, id])
 }
 
 export async function deleteDiaDoPlano(id: number): Promise<void> {
@@ -60,6 +66,16 @@ export async function addExercicioAoDia(exercicio: Omit<ExercicioPlano, 'id'>): 
   )
 }
 
+export async function updateExercicioDoDia(
+  id: number,
+  campos: Pick<ExercicioPlano, 'nome' | 'series' | 'repeticoes' | 'carga_kg' | 'descanso_seg'>,
+): Promise<void> {
+  await run(
+    `UPDATE exercicios_plano SET nome = ?, series = ?, repeticoes = ?, carga_kg = ?, descanso_seg = ? WHERE id = ?`,
+    [campos.nome, campos.series, campos.repeticoes, campos.carga_kg, campos.descanso_seg, id],
+  )
+}
+
 export async function deleteExercicioDoDia(id: number): Promise<void> {
   await run('DELETE FROM exercicios_plano WHERE id = ?', [id])
 }
@@ -72,7 +88,11 @@ export async function iniciarRegistroTreino(diaPlanoId: number, data: string): P
   )
   if (existente) return existente.id
 
-  await run('INSERT INTO registros_treino (dia_plano_id, data) VALUES (?, ?)', [diaPlanoId, data])
+  await run('INSERT INTO registros_treino (dia_plano_id, data, hora) VALUES (?, ?, ?)', [
+    diaPlanoId,
+    data,
+    nowHHMM(),
+  ])
   const row = await queryOne<{ id: number }>('SELECT last_insert_rowid() as id')
   const registroId = row!.id
   await registrarLog('inicio_treino', registroId, data)
@@ -88,6 +108,13 @@ export async function iniciarRegistroTreino(diaPlanoId: number, data: string): P
   }
 
   return registroId
+}
+
+export async function buscarRegistroTreino(diaPlanoId: number, data: string): Promise<RegistroTreino | null> {
+  return queryOne<RegistroTreino>('SELECT * FROM registros_treino WHERE dia_plano_id = ? AND data = ?', [
+    diaPlanoId,
+    data,
+  ])
 }
 
 export async function listExecucoes(registroTreinoId: number): Promise<ExecucaoExercicio[]> {
@@ -127,6 +154,10 @@ export async function atualizarExecucao(
   const setClause = entries.map(([campo]) => `${campo} = ?`).join(', ')
   const valores = entries.map(([, valor]) => valor as string | number | null)
   await run(`UPDATE execucoes_exercicio SET ${setClause} WHERE id = ?`, [...valores, id])
+}
+
+export async function deleteExecucao(id: number): Promise<void> {
+  await run('DELETE FROM execucoes_exercicio WHERE id = ?', [id])
 }
 
 export async function listRegistrosTreino(dias = 14): Promise<RegistroTreino[]> {

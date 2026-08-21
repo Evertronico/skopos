@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
+import { DateNavigator } from '../../components/DateNavigator'
 import { MeasurementsChart, type ItemMedida } from '../../components/MeasurementsChart'
+import { MeasurementsEvolutionChart } from '../../components/MeasurementsEvolutionChart'
 import { NutritionPlate } from '../../components/NutritionPlate'
 import { WaterBottle } from '../../components/WaterBottle'
 import { WeeklyTrainingChart } from '../../components/WeeklyTrainingChart'
@@ -9,17 +11,17 @@ import { listMedidas } from '../../db/repoMedidas'
 import { getMetasMedidas } from '../../db/repoMetasMedidas'
 import { getPerfil } from '../../db/repoPerfil'
 import { getPlanoNutricional } from '../../db/repoPlanoNutricional'
-import { listHidratacao, listNutricao, listSono } from '../../db/repoRegistros'
+import { listHidratacao, listHidratacaoDoDia, listNutricao, listNutricaoDoDia, listSono } from '../../db/repoRegistros'
 import { listExecucoes, listRegistrosTreino } from '../../db/repoTreino'
 import type { MedidaAntropometrica, MetasMedidas, Perfil } from '../../db/types'
 import { calcularMetas, derivarMacros } from '../../lib/calculations'
-import { daysAgoISO, todayISO } from '../../lib/date'
+import { daysAgoISO, rotuloDia, todayISO } from '../../lib/date'
 import { scoreEvolucaoMedidas, scoreMediaContraMeta, scoreNutricao, scoreTreino, type RadarScores } from '../../lib/radar'
 
 const SETE_DIAS_ATRAS = daysAgoISO(7)
 const CATORZE_DIAS_ATRAS = daysAgoISO(14)
 
-const CAMPOS_MEDIDA: { chave: Exclude<keyof MedidaAntropometrica, 'id' | 'data'>; label: string }[] = [
+const CAMPOS_MEDIDA: { chave: Exclude<keyof MedidaAntropometrica, 'id' | 'data' | 'hora'>; label: string }[] = [
   { chave: 'peso_kg', label: 'Peso (kg)' },
   { chave: 'percentual_gordura', label: '% Gordura' },
   { chave: 'cintura_cm', label: 'Cintura (cm)' },
@@ -46,15 +48,17 @@ export function DashboardPage() {
   const [atual, setAtual] = useState<RadarScores | null>(null)
   const [anterior, setAnterior] = useState<RadarScores | null>(null)
   const [semDados, setSemDados] = useState(false)
+  const [medidasLista, setMedidasLista] = useState<MedidaAntropometrica[]>([])
+  const [itensMedidas, setItensMedidas] = useState<ItemMedida[]>([])
 
+  const [diaHoje, setDiaHoje] = useState(todayISO())
   const [aguaHojePct, setAguaHojePct] = useState(0)
   const [caloriasHojePct, setCaloriasHojePct] = useState(0)
   const [proteinaHojePct, setProteinaHojePct] = useState(0)
   const [carboHojePct, setCarboHojePct] = useState(0)
   const [gorduraHojePct, setGorduraHojePct] = useState(0)
 
-  const [itensMedidas, setItensMedidas] = useState<ItemMedida[]>([])
-
+  // --- Score semanal, medidas atual x meta, evolução das medidas ---
   useEffect(() => {
     async function carregar() {
       const [perfil, medidas, metasMedidas, planoNutricional, treinos14, hidratacao14, sono14, nutricao14] =
@@ -74,6 +78,8 @@ export function DashboardPage() {
         return
       }
 
+      setMedidasLista(medidas)
+
       const pesoHoje = encontrarPesoProximo(medidas, todayISO())
       const metasCalculadas = calcularMetas(perfil as Perfil, pesoHoje)
       const metas =
@@ -86,21 +92,6 @@ export function DashboardPage() {
               ...derivarMacros(planoNutricional.calorias),
             }
           : metasCalculadas
-
-      // --- "hoje": garrafinha + prato ---
-      const hoje = todayISO()
-      const mlHoje = hidratacao14.filter((r) => r.data === hoje).reduce((s, r) => s + r.ml_consumido, 0)
-      const registrosHoje = nutricao14.filter((r) => r.data === hoje)
-      const caloriasHoje = registrosHoje.reduce((s, r) => s + (r.calorias ?? 0), 0)
-      const proteinaHoje = registrosHoje.reduce((s, r) => s + (r.proteina_g ?? 0), 0)
-      const carboHoje = registrosHoje.reduce((s, r) => s + (r.carboidrato_g ?? 0), 0)
-      const gorduraHoje = registrosHoje.reduce((s, r) => s + (r.gordura_g ?? 0), 0)
-
-      setAguaHojePct(percentual(mlHoje, metas.agua_ml))
-      setCaloriasHojePct(percentual(caloriasHoje, metas.calorias))
-      setProteinaHojePct(percentual(proteinaHoje, metas.proteina_g))
-      setCarboHojePct(percentual(carboHoje, metas.carboidrato_g))
-      setGorduraHojePct(percentual(gorduraHoje, metas.gordura_g))
 
       // --- medidas: atual x meta, só as que têm ao menos um registro ---
       const metaMedidasObj: MetasMedidas | null = metasMedidas
@@ -177,6 +168,58 @@ export function DashboardPage() {
     }
   }, [])
 
+  // --- Card "Hoje": garrafinha + prato, navegável por dia ---
+  useEffect(() => {
+    async function carregarDia() {
+      const [perfil, medidas, planoNutricional, hidratacaoDia, nutricaoDia] = await Promise.all([
+        getPerfil(),
+        listMedidas(),
+        getPlanoNutricional(),
+        listHidratacaoDoDia(diaHoje),
+        listNutricaoDoDia(diaHoje),
+      ])
+      if (!perfil) return
+
+      const pesoAtual = medidas.find((m) => m.peso_kg !== null)?.peso_kg ?? null
+      const metasCalculadas = calcularMetas(perfil as Perfil, pesoAtual)
+      const metas =
+        planoNutricional?.calorias && planoNutricional.agua_ml && planoNutricional.sono_horas
+          ? {
+              calorias: planoNutricional.calorias,
+              proteina_g: planoNutricional.proteina_g ?? 0,
+              agua_ml: planoNutricional.agua_ml,
+              sono_horas: planoNutricional.sono_horas,
+              ...derivarMacros(planoNutricional.calorias),
+            }
+          : metasCalculadas
+
+      const mlDia = hidratacaoDia.reduce((s, r) => s + r.ml_consumido, 0)
+      const caloriasDia = nutricaoDia.reduce((s, r) => s + (r.calorias ?? 0), 0)
+      const proteinaDia = nutricaoDia.reduce((s, r) => s + (r.proteina_g ?? 0), 0)
+      const carboDia = nutricaoDia.reduce((s, r) => s + (r.carboidrato_g ?? 0), 0)
+      const gorduraDia = nutricaoDia.reduce((s, r) => s + (r.gordura_g ?? 0), 0)
+
+      setAguaHojePct(percentual(mlDia, metas.agua_ml))
+      setCaloriasHojePct(percentual(caloriasDia, metas.calorias))
+      setProteinaHojePct(percentual(proteinaDia, metas.proteina_g))
+      setCarboHojePct(percentual(carboDia, metas.carboidrato_g))
+      setGorduraHojePct(percentual(gorduraDia, metas.gordura_g))
+    }
+
+    carregarDia()
+
+    let timer: ReturnType<typeof setTimeout> | null = null
+    const unsubscribe = onDataChange(() => {
+      if (timer) clearTimeout(timer)
+      timer = setTimeout(carregarDia, 400)
+    })
+
+    return () => {
+      if (timer) clearTimeout(timer)
+      unsubscribe()
+    }
+  }, [diaHoje])
+
   if (semDados) {
     return (
       <div className="page">
@@ -227,8 +270,9 @@ export function DashboardPage() {
 
       <div className="card">
         <h3 className="card-title">
-          <IconDroplet size={18} /> Hoje
+          <IconDroplet size={18} /> {rotuloDia(diaHoje)}
         </h3>
+        <DateNavigator data={diaHoje} onChange={setDiaHoje} />
         <div className="hoje-grid">
           <WaterBottle percentual={aguaHojePct} />
           <NutritionPlate
@@ -245,6 +289,13 @@ export function DashboardPage() {
           <IconRuler size={18} /> Medidas: atual × meta
         </h3>
         <MeasurementsChart itens={itensMedidas} />
+      </div>
+
+      <div className="card">
+        <h3 className="card-title">
+          <IconRuler size={18} /> Evolução das medidas
+        </h3>
+        <MeasurementsEvolutionChart medidas={medidasLista} />
       </div>
 
       <div className="card">

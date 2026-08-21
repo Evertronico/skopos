@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react'
+import { DateNavigator } from '../../components/DateNavigator'
 import { FloatingInput } from '../../components/FloatingInput'
-import { IconCalendar, IconCheck, IconDumbbell, IconTrash } from '../../components/icons'
+import { IconCalendar, IconCheck, IconDumbbell, IconEdit, IconTrash } from '../../components/icons'
 import { registrarLog } from '../../db/repoLogs'
 import {
   addDiaAoPlano,
   addExercicioAoDia,
   adicionarExecucaoAvulsa,
   atualizarExecucao,
+  buscarRegistroTreino,
   createPlano,
   deleteDiaDoPlano,
+  deleteExecucao,
   deleteExercicioDoDia,
   deletePlano,
   deleteRegistroTreino,
@@ -16,10 +19,12 @@ import {
   listDiasDoPlano,
   listExecucoes,
   listExerciciosDoDia,
-  listHistoricoDoDia,
   listPlanos,
+  updateDiaDoPlano,
+  updateExercicioDoDia,
+  updatePlano,
 } from '../../db/repoTreino'
-import type { DiaPlano, DiaSemana, ExecucaoExercicio, ExercicioPlano, PlanoTreino, RegistroTreino } from '../../db/types'
+import type { DiaPlano, DiaSemana, ExecucaoExercicio, ExercicioPlano, PlanoTreino } from '../../db/types'
 import { diasEntre, formatDataBR, NOME_DIA_SEMANA, ORDEM_DIAS_SEMANA, todayISO } from '../../lib/date'
 import { ExecucaoItem } from './ExecucaoItem'
 
@@ -64,18 +69,21 @@ export function TreinoPage() {
   const [planoSelecionadoId, setPlanoSelecionadoId] = useState<number | null>(null)
   const [mostrarFormFicha, setMostrarFormFicha] = useState(false)
   const [novoPlanoNome, setNovoPlanoNome] = useState('')
+  const [editandoFicha, setEditandoFicha] = useState(false)
+  const [nomeFichaEdit, setNomeFichaEdit] = useState('')
 
   const [dias, setDias] = useState<DiaPlano[]>([])
   const [diaSelecionadoId, setDiaSelecionadoId] = useState<number | null>(null)
   const [mostrarFormDia, setMostrarFormDia] = useState(false)
+  const [editandoDiaId, setEditandoDiaId] = useState<number | null>(null)
   const [novoDiaSemana, setNovoDiaSemana] = useState<DiaSemana>(1)
   const [novoDiaNome, setNovoDiaNome] = useState('')
 
   const [exercicios, setExercicios] = useState<ExercicioPlano[]>([])
   const [mostrarFormExercicio, setMostrarFormExercicio] = useState(false)
+  const [editandoExercicioId, setEditandoExercicioId] = useState<number | null>(null)
   const [novoExercicio, setNovoExercicio] = useState(EXERCICIO_VAZIO)
 
-  const [historico, setHistorico] = useState<RegistroTreino[]>([])
   const [dataRegistro, setDataRegistro] = useState(todayISO())
   const [registroAtivoId, setRegistroAtivoId] = useState<number | null>(null)
   const [execucoes, setExecucoes] = useState<ExecucaoExercicio[]>([])
@@ -111,17 +119,31 @@ export function TreinoPage() {
   useEffect(() => {
     if (diaSelecionadoId === null) {
       setExercicios([])
-      setHistorico([])
+      return
+    }
+    listExerciciosDoDia(diaSelecionadoId).then(setExercicios)
+    setEditandoExercicioId(null)
+    setNovoExercicio(EXERCICIO_VAZIO)
+    setMostrarFormExercicio(false)
+  }, [diaSelecionadoId])
+
+  // Navegar a data (ou trocar de dia da ficha) carrega automaticamente o treino daquele dia, se existir.
+  useEffect(() => {
+    if (diaSelecionadoId === null) {
       setRegistroAtivoId(null)
       setExecucoes([])
       return
     }
-    listExerciciosDoDia(diaSelecionadoId).then(setExercicios)
-    listHistoricoDoDia(diaSelecionadoId).then(setHistorico)
-    setRegistroAtivoId(null)
-    setExecucoes([])
-    setDataRegistro(todayISO())
-  }, [diaSelecionadoId])
+    buscarRegistroTreino(diaSelecionadoId, dataRegistro).then((registro) => {
+      if (registro) {
+        setRegistroAtivoId(registro.id)
+        listExecucoes(registro.id).then(setExecucoes)
+      } else {
+        setRegistroAtivoId(null)
+        setExecucoes([])
+      }
+    })
+  }, [diaSelecionadoId, dataRegistro])
 
   async function handleCriarPlano(e: React.FormEvent) {
     e.preventDefault()
@@ -133,6 +155,14 @@ export function TreinoPage() {
     setPlanoSelecionadoId(id)
   }
 
+  async function handleSalvarNomeFicha(e: React.FormEvent) {
+    e.preventDefault()
+    if (planoSelecionadoId === null || !nomeFichaEdit.trim()) return
+    await updatePlano(planoSelecionadoId, nomeFichaEdit.trim())
+    setEditandoFicha(false)
+    await recarregarPlanos()
+  }
+
   async function handleExcluirPlano(id: number) {
     if (!confirm('Excluir esta ficha e todos os dias, exercícios e treinos registrados nela?')) return
     await deletePlano(id)
@@ -140,15 +170,31 @@ export function TreinoPage() {
     await recarregarPlanos()
   }
 
-  async function handleAdicionarDia(e: React.FormEvent) {
+  async function handleSalvarDia(e: React.FormEvent) {
     e.preventDefault()
     if (planoSelecionadoId === null) return
+    if (editandoDiaId !== null) {
+      await updateDiaDoPlano(editandoDiaId, novoDiaSemana, novoDiaNome.trim() || null)
+      setEditandoDiaId(null)
+      setMostrarFormDia(false)
+      const lista = await listDiasDoPlano(planoSelecionadoId)
+      setDias(lista)
+      setDiaSelecionadoId(editandoDiaId)
+      return
+    }
     const id = await addDiaAoPlano(planoSelecionadoId, novoDiaSemana, novoDiaNome.trim() || null)
     setNovoDiaNome('')
     setMostrarFormDia(false)
     const lista = await listDiasDoPlano(planoSelecionadoId)
     setDias(lista)
     setDiaSelecionadoId(id)
+  }
+
+  function iniciarEdicaoDia(dia: DiaPlano) {
+    setEditandoDiaId(dia.id)
+    setNovoDiaSemana(dia.dia_semana)
+    setNovoDiaNome(dia.nome ?? '')
+    setMostrarFormDia(true)
   }
 
   async function handleExcluirDia(id: number) {
@@ -160,21 +206,44 @@ export function TreinoPage() {
     setDiaSelecionadoId(lista[0]?.id ?? null)
   }
 
-  async function handleAdicionarExercicio(e: React.FormEvent) {
+  async function handleSalvarExercicio(e: React.FormEvent) {
     e.preventDefault()
     if (diaSelecionadoId === null || !novoExercicio.nome.trim()) return
-    await addExercicioAoDia({
-      nome: novoExercicio.nome,
-      series: ouZero(novoExercicio.series),
-      repeticoes: ouZero(novoExercicio.repeticoes),
-      carga_kg: ouZero(novoExercicio.carga_kg),
-      descanso_seg: ouZero(novoExercicio.descanso_seg),
-      dia_plano_id: diaSelecionadoId,
-      ordem: exercicios.length,
-    })
+    if (editandoExercicioId !== null) {
+      await updateExercicioDoDia(editandoExercicioId, {
+        nome: novoExercicio.nome,
+        series: ouZero(novoExercicio.series),
+        repeticoes: ouZero(novoExercicio.repeticoes),
+        carga_kg: ouZero(novoExercicio.carga_kg),
+        descanso_seg: ouZero(novoExercicio.descanso_seg),
+      })
+    } else {
+      await addExercicioAoDia({
+        nome: novoExercicio.nome,
+        series: ouZero(novoExercicio.series),
+        repeticoes: ouZero(novoExercicio.repeticoes),
+        carga_kg: ouZero(novoExercicio.carga_kg),
+        descanso_seg: ouZero(novoExercicio.descanso_seg),
+        dia_plano_id: diaSelecionadoId,
+        ordem: exercicios.length,
+      })
+    }
     setNovoExercicio(EXERCICIO_VAZIO)
+    setEditandoExercicioId(null)
     setMostrarFormExercicio(false)
     setExercicios(await listExerciciosDoDia(diaSelecionadoId))
+  }
+
+  function iniciarEdicaoExercicio(ex: ExercicioPlano) {
+    setEditandoExercicioId(ex.id)
+    setNovoExercicio({
+      nome: ex.nome,
+      series: ex.series ?? '',
+      repeticoes: ex.repeticoes ?? '',
+      carga_kg: ex.carga_kg ?? '',
+      descanso_seg: ex.descanso_seg ?? '',
+    })
+    setMostrarFormExercicio(true)
   }
 
   async function handleExcluirExercicio(id: number) {
@@ -182,10 +251,9 @@ export function TreinoPage() {
     if (diaSelecionadoId !== null) setExercicios(await listExerciciosDoDia(diaSelecionadoId))
   }
 
-  async function abrirRegistro(data: string) {
+  async function handleRegistrarTreinoDeHoje() {
     if (diaSelecionadoId === null) return
-    setDataRegistro(data)
-    const registroId = await iniciarRegistroTreino(diaSelecionadoId, data)
+    const registroId = await iniciarRegistroTreino(diaSelecionadoId, dataRegistro)
     setRegistroAtivoId(registroId)
     setExecucoes(await listExecucoes(registroId))
   }
@@ -209,21 +277,21 @@ export function TreinoPage() {
     setExecucoes(await listExecucoes(registroAtivoId))
   }
 
-  async function fecharRegistro() {
-    if (registroAtivoId !== null) await registrarLog('fim_treino', registroAtivoId)
-    setRegistroAtivoId(null)
-    setExecucoes([])
-    if (diaSelecionadoId !== null) setHistorico(await listHistoricoDoDia(diaSelecionadoId))
+  async function handleExcluirExecucao(id: number) {
+    await deleteExecucao(id)
+    if (registroAtivoId !== null) setExecucoes(await listExecucoes(registroAtivoId))
+  }
+
+  async function handleConcluirTreino() {
+    if (registroAtivoId === null) return
+    await registrarLog('fim_treino', registroAtivoId)
   }
 
   async function handleExcluirRegistro(id: number) {
     if (!confirm('Excluir este treino registrado? Os exercícios previstos na ficha não são afetados.')) return
     await deleteRegistroTreino(id)
-    if (registroAtivoId === id) {
-      setRegistroAtivoId(null)
-      setExecucoes([])
-    }
-    if (diaSelecionadoId !== null) setHistorico(await listHistoricoDoDia(diaSelecionadoId))
+    setRegistroAtivoId(null)
+    setExecucoes([])
   }
 
   return (
@@ -282,15 +350,45 @@ export function TreinoPage() {
           {planoSelecionado && (
             <div className="card">
               <div className="section-header">
-                <span className="hint">Ficha criada em {formatDataBR(planoSelecionado.criado_em)}</span>
-                <button
-                  className="icon-danger"
-                  onClick={() => handleExcluirPlano(planoSelecionado.id)}
-                  aria-label="Excluir ficha"
-                >
-                  <IconTrash size={16} />
-                </button>
+                {!editandoFicha && (
+                  <>
+                    <span className="hint">
+                      {planoSelecionado.nome} · criada em {formatDataBR(planoSelecionado.criado_em)}
+                    </span>
+                    <div className="botoes-linha">
+                      <button
+                        className="icon-neutro"
+                        onClick={() => {
+                          setEditandoFicha(true)
+                          setNomeFichaEdit(planoSelecionado.nome)
+                        }}
+                        aria-label="Editar nome da ficha"
+                      >
+                        <IconEdit size={16} />
+                      </button>
+                      <button
+                        className="icon-danger"
+                        onClick={() => handleExcluirPlano(planoSelecionado.id)}
+                        aria-label="Excluir ficha"
+                      >
+                        <IconTrash size={16} />
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
+
+              {editandoFicha && (
+                <form className="inline-form" onSubmit={handleSalvarNomeFicha}>
+                  <input type="text" value={nomeFichaEdit} onChange={(e) => setNomeFichaEdit(e.target.value)} autoFocus />
+                  <button type="submit" className="btn-primary">
+                    Salvar
+                  </button>
+                  <button type="button" onClick={() => setEditandoFicha(false)}>
+                    Cancelar
+                  </button>
+                </form>
+              )}
 
               {idadePlanoDias >= IDADE_LIMITE_FICHA_DIAS && (
                 <p className="hint aviso">
@@ -325,10 +423,27 @@ export function TreinoPage() {
                 </div>
               )}
 
-              {!mostrarFormDia && <button onClick={() => setMostrarFormDia(true)}>+ adicionar dia</button>}
+              {diaSelecionado && !mostrarFormDia && (
+                <button className="icon-neutro" onClick={() => iniciarEdicaoDia(diaSelecionado)} aria-label="Editar dia">
+                  <IconEdit size={14} /> editar dia selecionado
+                </button>
+              )}
+
+              {!mostrarFormDia && (
+                <button
+                  onClick={() => {
+                    setEditandoDiaId(null)
+                    setNovoDiaSemana(1)
+                    setNovoDiaNome('')
+                    setMostrarFormDia(true)
+                  }}
+                >
+                  + adicionar dia
+                </button>
+              )}
 
               {mostrarFormDia && (
-                <form className="inline-form" onSubmit={handleAdicionarDia}>
+                <form className="inline-form" onSubmit={handleSalvarDia}>
                   <select
                     value={novoDiaSemana}
                     onChange={(e) => setNovoDiaSemana(Number(e.target.value) as DiaSemana)}
@@ -346,9 +461,15 @@ export function TreinoPage() {
                     onChange={(e) => setNovoDiaNome(e.target.value)}
                   />
                   <button type="submit" className="btn-primary">
-                    Adicionar
+                    {editandoDiaId !== null ? 'Salvar' : 'Adicionar'}
                   </button>
-                  <button type="button" onClick={() => setMostrarFormDia(false)}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMostrarFormDia(false)
+                      setEditandoDiaId(null)
+                    }}
+                  >
                     Cancelar
                   </button>
                 </form>
@@ -376,9 +497,9 @@ export function TreinoPage() {
                 <ul className="list">
                   {exercicios.map((ex) => (
                     <li key={ex.id}>
-                      <span>
+                      <button className="list-item-conteudo" onClick={() => iniciarEdicaoExercicio(ex)}>
                         {ex.nome} — {ex.series}x{ex.repeticoes} @ {ex.carga_kg}kg, descanso {ex.descanso_seg}s
-                      </span>
+                      </button>
                       <button className="icon-danger" onClick={() => handleExcluirExercicio(ex.id)} aria-label="Excluir exercício">
                         <IconTrash size={16} />
                       </button>
@@ -388,11 +509,19 @@ export function TreinoPage() {
               )}
 
               {!mostrarFormExercicio && (
-                <button onClick={() => setMostrarFormExercicio(true)}>+ adicionar exercício</button>
+                <button
+                  onClick={() => {
+                    setEditandoExercicioId(null)
+                    setNovoExercicio(EXERCICIO_VAZIO)
+                    setMostrarFormExercicio(true)
+                  }}
+                >
+                  + adicionar exercício
+                </button>
               )}
 
               {mostrarFormExercicio && (
-                <form className="form-page" onSubmit={handleAdicionarExercicio}>
+                <form className="form-page" onSubmit={handleSalvarExercicio}>
                   <label>
                     Exercício
                     <input
@@ -441,7 +570,7 @@ export function TreinoPage() {
                   </div>
                   <div className="botoes-linha">
                     <button type="submit" className="btn-primary">
-                      Adicionar
+                      {editandoExercicioId !== null ? 'Salvar' : 'Adicionar'}
                     </button>
                     <button type="button" onClick={() => setMostrarFormExercicio(false)}>
                       Cancelar
@@ -458,39 +587,14 @@ export function TreinoPage() {
                 <IconCheck size={18} /> 3. Registrar treino
               </h3>
 
+              <DateNavigator data={dataRegistro} onChange={setDataRegistro} />
+
               {registroAtivoId === null && (
                 <>
-                  <div className="inline-form">
-                    <label>
-                      Data
-                      <input
-                        type="date"
-                        value={dataRegistro}
-                        onChange={(e) => setDataRegistro(e.target.value)}
-                      />
-                    </label>
-                    <button className="btn-primary" onClick={() => abrirRegistro(dataRegistro)}>
-                      Registrar treino
-                    </button>
-                  </div>
-
-                  {historico.length > 0 && (
-                    <>
-                      <p className="hint">Treinos já registrados neste dia</p>
-                      <ul className="list-compact">
-                        {historico.map((h) => (
-                          <li key={h.id} className="list-linha">
-                            <button className="list-item-conteudo" onClick={() => abrirRegistro(h.data)}>
-                              {formatDataBR(h.data)}
-                            </button>
-                            <button className="icon-danger" onClick={() => handleExcluirRegistro(h.id)} aria-label="Excluir treino">
-                              <IconTrash size={16} />
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    </>
-                  )}
+                  <p className="hint">Nenhum treino registrado em {formatDataBR(dataRegistro)} ainda.</p>
+                  <button className="btn-primary" onClick={handleRegistrarTreinoDeHoje}>
+                    Registrar treino deste dia
+                  </button>
                 </>
               )}
 
@@ -516,6 +620,7 @@ export function TreinoPage() {
                           exercicios.find((ex) => ex.id === exec.exercicio_plano_id)?.series ?? null
                         }
                         onAtualizar={handleAtualizarExecucao}
+                        onExcluir={handleExcluirExecucao}
                       />
                     ))}
                   </ul>
@@ -576,7 +681,7 @@ export function TreinoPage() {
                     </form>
                   )}
 
-                  <button onClick={fecharRegistro}>Fechar</button>
+                  <button onClick={handleConcluirTreino}>Concluir treino</button>
                 </div>
               )}
             </div>

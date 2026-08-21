@@ -3,37 +3,30 @@ import { useEffect, useState } from 'react'
 import { Bar } from 'react-chartjs-2'
 import { listRegistrosTreinoEntre } from '../db/repoTreino'
 import { corCss } from '../lib/cssVar'
-import { formatDataBR } from '../lib/date'
+import { adicionarDias, formatDataBR, paraISOLocal } from '../lib/date'
 import { IconChevronLeft, IconChevronRight } from './icons'
 
 ChartJS.register(BarElement, CategoryScale, LinearScale, Tooltip)
 
 const DIAS_LABEL = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
 
-function inicioDaSemana(offsetSemanas: number): Date {
+function inicioDaSemanaISO(offsetSemanas: number): string {
   const hoje = new Date()
   const diaSemanaAtual = hoje.getDay()
   const diffParaSegunda = diaSemanaAtual === 0 ? -6 : 1 - diaSemanaAtual
-  const segunda = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate())
-  segunda.setDate(segunda.getDate() + diffParaSegunda + offsetSemanas * 7)
-  return segunda
-}
-
-function paraISO(d: Date): string {
-  return d.toISOString().slice(0, 10)
+  return adicionarDias(paraISOLocal(hoje), diffParaSegunda + offsetSemanas * 7)
 }
 
 export function WeeklyTrainingChart() {
   const [offset, setOffset] = useState(0)
   const [contagens, setContagens] = useState<number[]>(Array(7).fill(0))
 
-  const segunda = inicioDaSemana(offset)
-  const domingo = new Date(segunda)
-  domingo.setDate(segunda.getDate() + 6)
+  const segunda = inicioDaSemanaISO(offset)
+  const domingo = adicionarDias(segunda, 6)
 
   useEffect(() => {
     async function carregar() {
-      const registros = await listRegistrosTreinoEntre(paraISO(segunda), paraISO(domingo))
+      const registros = await listRegistrosTreinoEntre(segunda, domingo)
       const porDia = Array(7).fill(0)
       for (const r of registros) {
         const d = new Date(`${r.data}T00:00:00`)
@@ -53,7 +46,7 @@ export function WeeklyTrainingChart() {
           <IconChevronLeft size={18} />
         </button>
         <span className="hint">
-          {formatDataBR(paraISO(segunda))} – {formatDataBR(paraISO(domingo))}
+          {formatDataBR(segunda)} – {formatDataBR(domingo)}
         </span>
         <button
           type="button"

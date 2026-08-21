@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 4
+export const SCHEMA_VERSION = 5
 
 export const SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS perfil (
@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS perfil (
 CREATE TABLE IF NOT EXISTS medidas_antropometricas (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   data TEXT NOT NULL,
+  hora TEXT,
   peso_kg REAL,
   percentual_gordura REAL,
   cintura_cm REAL,
@@ -28,12 +29,14 @@ CREATE TABLE IF NOT EXISTS medidas_antropometricas (
 CREATE TABLE IF NOT EXISTS registros_hidratacao (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   data TEXT NOT NULL,
+  hora TEXT,
   ml_consumido INTEGER NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS registros_sono (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   data TEXT NOT NULL,
+  hora TEXT,
   horas REAL NOT NULL,
   qualidade INTEGER
 );
@@ -41,6 +44,7 @@ CREATE TABLE IF NOT EXISTS registros_sono (
 CREATE TABLE IF NOT EXISTS registros_nutricao (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   data TEXT NOT NULL,
+  hora TEXT,
   descricao TEXT,
   calorias INTEGER,
   proteina_g REAL,
@@ -66,6 +70,8 @@ CREATE TABLE IF NOT EXISTS planos_nutricionais (
   id INTEGER PRIMARY KEY CHECK (id = 1),
   calorias INTEGER,
   proteina_g REAL,
+  carboidrato_g REAL,
+  gordura_g REAL,
   agua_ml INTEGER,
   sono_horas REAL,
   criado_em TEXT
@@ -101,7 +107,8 @@ CREATE TABLE IF NOT EXISTS exercicios_plano (
 CREATE TABLE IF NOT EXISTS registros_treino (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   dia_plano_id INTEGER NOT NULL REFERENCES dias_plano(id),
-  data TEXT NOT NULL
+  data TEXT NOT NULL,
+  hora TEXT
 );
 
 CREATE TABLE IF NOT EXISTS execucoes_exercicio (

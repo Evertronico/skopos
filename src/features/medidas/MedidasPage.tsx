@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
+import { DateNavigator } from '../../components/DateNavigator'
 import { FloatingInput } from '../../components/FloatingInput'
 import { WeightChart } from '../../components/WeightChart'
-import { IconCalendar, IconCheck, IconRuler, IconTarget, IconTrash } from '../../components/icons'
-import { addMedida, deleteMedida, listMedidas, updateMedida } from '../../db/repoMedidas'
+import { IconCheck, IconRuler, IconTarget, IconTrash } from '../../components/icons'
+import { addMedida, deleteMedida, getMedidaPorData, listMedidas, updateMedida } from '../../db/repoMedidas'
 import { getMetasMedidas, salvarMetasMedidas } from '../../db/repoMetasMedidas'
 import type { MedidaAntropometrica } from '../../db/types'
-import { formatDataBR, todayISO } from '../../lib/date'
+import { formatDataHoraBR, nowHHMM, todayISO } from '../../lib/date'
 
-const CAMPOS: { chave: Exclude<keyof MedidaAntropometrica, 'id' | 'data'>; rotulo: string }[] = [
+const CAMPOS: { chave: Exclude<keyof MedidaAntropometrica, 'id' | 'data' | 'hora'>; rotulo: string }[] = [
   { chave: 'peso_kg', rotulo: 'Peso (kg)' },
   { chave: 'percentual_gordura', rotulo: '% Gordura' },
   { chave: 'cintura_cm', rotulo: 'Cintura (cm)' },
@@ -19,18 +20,21 @@ const CAMPOS: { chave: Exclude<keyof MedidaAntropometrica, 'id' | 'data'>; rotul
 ]
 
 type NovaMedida = Omit<MedidaAntropometrica, 'id'>
-type MetaMedidas = Omit<MedidaAntropometrica, 'id' | 'data'>
+type MetaMedidas = Omit<MedidaAntropometrica, 'id' | 'data' | 'hora'>
 
-const MEDIDA_VAZIA: NovaMedida = {
-  data: todayISO(),
-  peso_kg: null,
-  percentual_gordura: null,
-  cintura_cm: null,
-  quadril_cm: null,
-  peito_cm: null,
-  braco_cm: null,
-  coxa_cm: null,
-  pescoco_cm: null,
+function medidaVazia(data: string): NovaMedida {
+  return {
+    data,
+    hora: nowHHMM(),
+    peso_kg: null,
+    percentual_gordura: null,
+    cintura_cm: null,
+    quadril_cm: null,
+    peito_cm: null,
+    braco_cm: null,
+    coxa_cm: null,
+    pescoco_cm: null,
+  }
 }
 
 const META_VAZIA: MetaMedidas = {
@@ -46,7 +50,8 @@ const META_VAZIA: MetaMedidas = {
 
 export function MedidasPage() {
   const [medidas, setMedidas] = useState<MedidaAntropometrica[]>([])
-  const [form, setForm] = useState<NovaMedida>(MEDIDA_VAZIA)
+  const [diaAtual, setDiaAtual] = useState(todayISO())
+  const [form, setForm] = useState<NovaMedida>(medidaVazia(todayISO()))
   const [editandoId, setEditandoId] = useState<number | null>(null)
 
   const [meta, setMeta] = useState<MetaMedidas>(META_VAZIA)
@@ -69,16 +74,18 @@ export function MedidasPage() {
     recarregar()
   }, [])
 
-  function iniciarEdicao(m: MedidaAntropometrica) {
-    const { id, ...resto } = m
-    setEditandoId(id)
-    setForm(resto)
-  }
-
-  function cancelarEdicao() {
-    setEditandoId(null)
-    setForm({ ...MEDIDA_VAZIA, data: todayISO() })
-  }
+  useEffect(() => {
+    getMedidaPorData(diaAtual).then((m) => {
+      if (m) {
+        const { id, ...resto } = m
+        setEditandoId(id)
+        setForm(resto)
+      } else {
+        setEditandoId(null)
+        setForm(medidaVazia(diaAtual))
+      }
+    })
+  }, [diaAtual])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -87,13 +94,15 @@ export function MedidasPage() {
     } else {
       await addMedida(form)
     }
-    cancelarEdicao()
     await recarregar()
   }
 
   async function handleDelete(id: number) {
     await deleteMedida(id)
-    if (editandoId === id) cancelarEdicao()
+    if (editandoId === id) {
+      setEditandoId(null)
+      setForm(medidaVazia(diaAtual))
+    }
     await recarregar()
   }
 
@@ -172,14 +181,16 @@ export function MedidasPage() {
         <h3 className="card-title">
           <IconCheck size={18} /> {editandoId !== null ? 'Editar medida' : 'Nova medida'}
         </h3>
-        {editandoId !== null && <p className="hint">Editando medida de {formatDataBR(form.data)}.</p>}
 
-        <label>
-          <span className="card-title">
-            <IconCalendar size={16} /> Data
-          </span>
-          <input type="date" value={form.data} onChange={(e) => setForm({ ...form, data: e.target.value })} />
-        </label>
+        <DateNavigator data={diaAtual} onChange={setDiaAtual} />
+
+        <FloatingInput
+          label="Hora"
+          type="time"
+          className="horario-campo"
+          value={form.hora ?? ''}
+          onChange={(e) => setForm({ ...form, hora: e.target.value || null })}
+        />
 
         <div className="campos-grid">
           {CAMPOS.map(({ chave, rotulo }) => (
@@ -195,16 +206,9 @@ export function MedidasPage() {
           ))}
         </div>
 
-        <div className="botoes-linha">
-          <button type="submit" className="btn-primary">
-            {editandoId !== null ? 'Salvar alterações' : 'Registrar medida'}
-          </button>
-          {editandoId !== null && (
-            <button type="button" onClick={cancelarEdicao}>
-              Cancelar
-            </button>
-          )}
-        </div>
+        <button type="submit" className="btn-primary">
+          {editandoId !== null ? 'Salvar alterações' : 'Registrar medida'}
+        </button>
       </form>
 
       <div className="card">
@@ -212,8 +216,8 @@ export function MedidasPage() {
         <ul className="list">
           {medidas.map((m) => (
             <li key={m.id} className={m.id === editandoId ? 'list-item-ativo' : undefined}>
-              <button className="list-item-conteudo" onClick={() => iniciarEdicao(m)}>
-                {formatDataBR(m.data)} — {m.peso_kg ?? '—'} kg
+              <button className="list-item-conteudo" onClick={() => setDiaAtual(m.data)}>
+                {formatDataHoraBR(m.data, m.hora)} — {m.peso_kg ?? '—'} kg
               </button>
               <button
                 className="icon-danger"
