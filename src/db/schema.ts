@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 5
+export const SCHEMA_VERSION = 6
 
 export const SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS perfil (
@@ -100,7 +100,8 @@ CREATE TABLE IF NOT EXISTS exercicios_plano (
   series INTEGER,
   repeticoes INTEGER,
   carga_kg REAL,
-  descanso_seg INTEGER
+  descanso_seg INTEGER,
+  grupo_muscular TEXT
 );
 
 -- Uma instância de execução: o dia da ficha, realizado numa data específica.
@@ -120,7 +121,9 @@ CREATE TABLE IF NOT EXISTS execucoes_exercicio (
   repeticoes_feitas INTEGER,
   carga_kg REAL,
   descanso_seg INTEGER,
-  concluido INTEGER DEFAULT 0
+  concluido INTEGER DEFAULT 0,
+  iniciado_em TEXT,
+  concluido_em TEXT
 );
 
 -- Trilha de eventos do treino (início/fim de sessão, cronômetro, conclusão de exercício) — usada para métricas futuras.

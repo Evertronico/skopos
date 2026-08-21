@@ -52,8 +52,8 @@ export async function listExerciciosDoDia(diaPlanoId: number): Promise<Exercicio
 
 export async function addExercicioAoDia(exercicio: Omit<ExercicioPlano, 'id'>): Promise<void> {
   await run(
-    `INSERT INTO exercicios_plano (dia_plano_id, nome, ordem, series, repeticoes, carga_kg, descanso_seg)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO exercicios_plano (dia_plano_id, nome, ordem, series, repeticoes, carga_kg, descanso_seg, grupo_muscular)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       exercicio.dia_plano_id,
       exercicio.nome,
@@ -62,22 +62,42 @@ export async function addExercicioAoDia(exercicio: Omit<ExercicioPlano, 'id'>): 
       exercicio.repeticoes,
       exercicio.carga_kg,
       exercicio.descanso_seg,
+      exercicio.grupo_muscular,
     ],
   )
 }
 
 export async function updateExercicioDoDia(
   id: number,
-  campos: Pick<ExercicioPlano, 'nome' | 'series' | 'repeticoes' | 'carga_kg' | 'descanso_seg'>,
+  campos: Pick<ExercicioPlano, 'nome' | 'series' | 'repeticoes' | 'carga_kg' | 'descanso_seg' | 'grupo_muscular'>,
 ): Promise<void> {
   await run(
-    `UPDATE exercicios_plano SET nome = ?, series = ?, repeticoes = ?, carga_kg = ?, descanso_seg = ? WHERE id = ?`,
-    [campos.nome, campos.series, campos.repeticoes, campos.carga_kg, campos.descanso_seg, id],
+    `UPDATE exercicios_plano SET nome = ?, series = ?, repeticoes = ?, carga_kg = ?, descanso_seg = ?, grupo_muscular = ? WHERE id = ?`,
+    [campos.nome, campos.series, campos.repeticoes, campos.carga_kg, campos.descanso_seg, campos.grupo_muscular, id],
   )
 }
 
 export async function deleteExercicioDoDia(id: number): Promise<void> {
   await run('DELETE FROM exercicios_plano WHERE id = ?', [id])
+}
+
+export async function listTodosExerciciosPlano(): Promise<ExercicioPlano[]> {
+  return query<ExercicioPlano>('SELECT * FROM exercicios_plano ORDER BY ordem ASC, id ASC')
+}
+
+/** Última data em que cada grupo muscular foi treinado (exercício marcado concluído), pra avaliar recuperação. */
+export async function ultimoTreinoPorGrupoMuscular(): Promise<Record<string, string>> {
+  const linhas = await query<{ grupo: string; ultima_data: string }>(
+    `SELECT ep.grupo_muscular as grupo, MAX(rt.data) as ultima_data
+     FROM execucoes_exercicio ee
+     JOIN exercicios_plano ep ON ep.id = ee.exercicio_plano_id
+     JOIN registros_treino rt ON rt.id = ee.registro_treino_id
+     WHERE ee.concluido = 1 AND ep.grupo_muscular IS NOT NULL AND ep.grupo_muscular != ''
+     GROUP BY ep.grupo_muscular`,
+  )
+  const mapa: Record<string, string> = {}
+  for (const l of linhas) mapa[l.grupo] = l.ultima_data
+  return mapa
 }
 
 /** Recupera (ou cria) o registro de execução de um dia da ficha numa data específica, semeado com os exercícios planejados. */
@@ -117,6 +137,15 @@ export async function buscarRegistroTreino(diaPlanoId: number, data: string): Pr
   ])
 }
 
+/** Todos os registros de treino numa data, de qualquer ficha/dia — permite treinar duas fichas no mesmo dia. */
+export async function listRegistrosTreinoPorData(data: string): Promise<RegistroTreino[]> {
+  return query<RegistroTreino>('SELECT * FROM registros_treino WHERE data = ? ORDER BY hora ASC, id ASC', [data])
+}
+
+export async function listTodosDiasPlano(): Promise<DiaPlano[]> {
+  return query<DiaPlano>('SELECT * FROM dias_plano ORDER BY dia_semana ASC')
+}
+
 export async function listExecucoes(registroTreinoId: number): Promise<ExecucaoExercicio[]> {
   return query<ExecucaoExercicio>(
     'SELECT * FROM execucoes_exercicio WHERE registro_treino_id = ? ORDER BY id ASC',
@@ -130,10 +159,11 @@ export async function adicionarExecucaoAvulsa(
   nome: string,
   campos: Partial<Pick<ExecucaoExercicio, 'series_feitas' | 'repeticoes_feitas' | 'carga_kg' | 'descanso_seg'>>,
 ): Promise<void> {
+  const agora = new Date().toISOString()
   await run(
     `INSERT INTO execucoes_exercicio
-       (registro_treino_id, exercicio_plano_id, nome, series_feitas, repeticoes_feitas, carga_kg, descanso_seg, concluido)
-     VALUES (?, NULL, ?, ?, ?, ?, ?, 1)`,
+       (registro_treino_id, exercicio_plano_id, nome, series_feitas, repeticoes_feitas, carga_kg, descanso_seg, concluido, iniciado_em, concluido_em)
+     VALUES (?, NULL, ?, ?, ?, ?, ?, 1, ?, ?)`,
     [
       registroTreinoId,
       nome,
@@ -141,13 +171,20 @@ export async function adicionarExecucaoAvulsa(
       campos.repeticoes_feitas ?? null,
       campos.carga_kg ?? null,
       campos.descanso_seg ?? null,
+      agora,
+      agora,
     ],
   )
 }
 
 export async function atualizarExecucao(
   id: number,
-  campos: Partial<Pick<ExecucaoExercicio, 'series_feitas' | 'repeticoes_feitas' | 'carga_kg' | 'descanso_seg' | 'concluido'>>,
+  campos: Partial<
+    Pick<
+      ExecucaoExercicio,
+      'series_feitas' | 'repeticoes_feitas' | 'carga_kg' | 'descanso_seg' | 'concluido' | 'iniciado_em' | 'concluido_em'
+    >
+  >,
 ): Promise<void> {
   const entries = Object.entries(campos)
   if (entries.length === 0) return

@@ -1,12 +1,7 @@
-import { BarElement, CategoryScale, Chart as ChartJS, LinearScale, Tooltip } from 'chart.js'
 import { useEffect, useState } from 'react'
-import { Bar } from 'react-chartjs-2'
 import { listRegistrosTreinoEntre } from '../db/repoTreino'
-import { corCss } from '../lib/cssVar'
-import { adicionarDias, formatDataBR, paraISOLocal } from '../lib/date'
+import { adicionarDias, formatDataBR, paraISOLocal, todayISO } from '../lib/date'
 import { IconChevronLeft, IconChevronRight } from './icons'
-
-ChartJS.register(BarElement, CategoryScale, LinearScale, Tooltip)
 
 const DIAS_LABEL = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
 
@@ -17,7 +12,7 @@ function inicioDaSemanaISO(offsetSemanas: number): string {
   return adicionarDias(paraISOLocal(hoje), diffParaSegunda + offsetSemanas * 7)
 }
 
-export function WeeklyTrainingChart() {
+export function WeeklyTrainingStrip() {
   const [offset, setOffset] = useState(0)
   const [contagens, setContagens] = useState<number[]>(Array(7).fill(0))
 
@@ -39,6 +34,8 @@ export function WeeklyTrainingChart() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [offset])
 
+  const hoje = todayISO()
+
   return (
     <div>
       <div className="semana-nav">
@@ -57,25 +54,21 @@ export function WeeklyTrainingChart() {
           <IconChevronRight size={18} />
         </button>
       </div>
-      <div style={{ height: 180 }}>
-        <Bar
-          data={{
-            labels: DIAS_LABEL,
-            datasets: [{ label: 'Treinos', data: contagens, backgroundColor: corCss('--accent'), borderRadius: 4 }],
-          }}
-          options={{
-            maintainAspectRatio: false,
-            scales: {
-              y: {
-                beginAtZero: true,
-                ticks: { stepSize: 1, color: corCss('--text-muted') },
-                grid: { color: corCss('--border-subtle') },
-              },
-              x: { ticks: { color: corCss('--text-muted') }, grid: { display: false } },
-            },
-            plugins: { legend: { display: false } },
-          }}
-        />
+
+      <div className="semana-strip">
+        {DIAS_LABEL.map((label, i) => {
+          const dataDoDia = adicionarDias(segunda, i)
+          const contagem = contagens[i]
+          const classes = ['semana-dia']
+          if (contagem > 0) classes.push('com-treino')
+          if (dataDoDia === hoje) classes.push('hoje')
+          return (
+            <div key={label} className={classes.join(' ')}>
+              <div className="semana-dia-capsula">{contagem > 0 ? contagem : ''}</div>
+              <span className="semana-dia-label">{label}</span>
+            </div>
+          )
+        })}
       </div>
     </div>
   )

@@ -5,7 +5,10 @@ import { registrarLog } from '../../db/repoLogs'
 import type { ExecucaoExercicio } from '../../db/types'
 
 type CamposEditaveis = Partial<
-  Pick<ExecucaoExercicio, 'series_feitas' | 'repeticoes_feitas' | 'carga_kg' | 'descanso_seg' | 'concluido'>
+  Pick<
+    ExecucaoExercicio,
+    'series_feitas' | 'repeticoes_feitas' | 'carga_kg' | 'descanso_seg' | 'concluido' | 'iniciado_em' | 'concluido_em'
+  >
 >
 
 interface Props {
@@ -75,7 +78,7 @@ export function ExecucaoItem({ exec, seriesPlanejadas, onAtualizar, onExcluir }:
     void registrarLog('fim_cronometro', exec.registro_treino_id, `${exec.nome} · série ${novaSerie}`)
 
     if (novaSerie >= alvoSeries) {
-      onAtualizar(exec.id, { concluido: 1 })
+      onAtualizar(exec.id, { concluido: 1, concluido_em: new Date().toISOString() })
       void registrarLog('exercicio_concluido', exec.registro_treino_id, `${exec.nome} · automático`)
       setMensagem('EXERCÍCIO CONCLUÍDO! 🏆')
       setFase('concluido')
@@ -103,7 +106,7 @@ export function ExecucaoItem({ exec, seriesPlanejadas, onAtualizar, onExcluir }:
     // A ficha pré-preenche séries feitas com o valor planejado; a primeira vez que o cronômetro
     // roda pra este exercício, zera o contador pra ele subir 1 por vez até bater o alvo de verdade.
     if (!cronometroIniciado) {
-      onAtualizar(exec.id, { series_feitas: 0 })
+      onAtualizar(exec.id, { series_feitas: 0, iniciado_em: new Date().toISOString() })
       setCronometroIniciado(true)
     }
     setContagem(descansoSeg)
@@ -150,7 +153,12 @@ export function ExecucaoItem({ exec, seriesPlanejadas, onAtualizar, onExcluir }:
           <input
             type="checkbox"
             checked={jaConcluido}
-            onChange={(e) => onAtualizar(exec.id, { concluido: e.target.checked ? 1 : 0 })}
+            onChange={(e) =>
+              onAtualizar(exec.id, {
+                concluido: e.target.checked ? 1 : 0,
+                concluido_em: e.target.checked ? new Date().toISOString() : null,
+              })
+            }
           />
           {exec.nome}
           {exec.exercicio_plano_id === null && <span className="badge">extra</span>}

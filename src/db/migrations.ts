@@ -114,6 +114,21 @@ function migrarV4ParaV5(db: Database): void {
   }
 }
 
+/** Schema v6 adicionou grupo muscular no exercício previsto, e início/fim de cada execução — tudo aditivo. */
+function migrarV5ParaV6(db: Database): void {
+  if (tableExists(db, 'exercicios_plano') && !tabelaTemColuna(db, 'exercicios_plano', 'grupo_muscular')) {
+    db.run('ALTER TABLE exercicios_plano ADD COLUMN grupo_muscular TEXT')
+  }
+  if (tableExists(db, 'execucoes_exercicio')) {
+    if (!tabelaTemColuna(db, 'execucoes_exercicio', 'iniciado_em')) {
+      db.run('ALTER TABLE execucoes_exercicio ADD COLUMN iniciado_em TEXT')
+    }
+    if (!tabelaTemColuna(db, 'execucoes_exercicio', 'concluido_em')) {
+      db.run('ALTER TABLE execucoes_exercicio ADD COLUMN concluido_em TEXT')
+    }
+  }
+}
+
 /** Roda as migrações necessárias no banco aberto. Retorna true se algo foi alterado (precisa persistir). */
 export function runMigrations(db: Database): boolean {
   let alterou = false
@@ -130,6 +145,11 @@ export function runMigrations(db: Database): boolean {
 
   if (tableExists(db, 'medidas_antropometricas') && !tabelaTemColuna(db, 'medidas_antropometricas', 'hora')) {
     migrarV4ParaV5(db)
+    alterou = true
+  }
+
+  if (tableExists(db, 'exercicios_plano') && !tabelaTemColuna(db, 'exercicios_plano', 'grupo_muscular')) {
+    migrarV5ParaV6(db)
     alterou = true
   }
 

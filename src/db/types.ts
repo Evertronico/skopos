@@ -82,6 +82,21 @@ export interface DiaPlano {
   nome: string | null
 }
 
+export const GRUPOS_MUSCULARES = [
+  'Peito',
+  'Costas',
+  'Ombro',
+  'Bíceps',
+  'Tríceps',
+  'Pernas',
+  'Glúteos',
+  'Abdômen',
+  'Panturrilha',
+  'Corpo todo/Cardio',
+] as const
+
+export type GrupoMuscular = (typeof GRUPOS_MUSCULARES)[number]
+
 export interface ExercicioPlano {
   id: number
   dia_plano_id: number
@@ -91,6 +106,7 @@ export interface ExercicioPlano {
   repeticoes: number | null
   carga_kg: number | null
   descanso_seg: number | null
+  grupo_muscular: string | null
 }
 
 export interface RegistroTreino {
@@ -110,6 +126,8 @@ export interface ExecucaoExercicio {
   carga_kg: number | null
   descanso_seg: number | null
   concluido: number
+  iniciado_em: string | null
+  concluido_em: string | null
 }
 
 export interface PlanoNutricional {

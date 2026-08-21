@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { DateNavigator } from '../../components/DateNavigator'
-import { MeasurementsChart, type ItemMedida } from '../../components/MeasurementsChart'
 import { MeasurementsEvolutionChart } from '../../components/MeasurementsEvolutionChart'
+import { MeasurementsProgress, type ItemMedida } from '../../components/MeasurementsProgress'
 import { NutritionPlate } from '../../components/NutritionPlate'
 import { WaterBottle } from '../../components/WaterBottle'
-import { WeeklyTrainingChart } from '../../components/WeeklyTrainingChart'
+import { WeeklyTrainingStrip } from '../../components/WeeklyTrainingStrip'
 import { IconDroplet, IconDumbbell, IconRuler, IconTarget } from '../../components/icons'
 import { onDataChange } from '../../db/database'
 import { listMedidas } from '../../db/repoMedidas'
@@ -252,6 +252,20 @@ export function DashboardPage() {
     else tendencia = 'Estável em relação à semana passada.'
   }
 
+  const dimensoesScore: { chave: keyof RadarScores; nome: string; explicacao: string }[] = [
+    { chave: 'treino', nome: 'Treino', explicacao: '% de exercícios marcados como concluídos nos treinos desta semana' },
+    { chave: 'hidratacao', nome: 'Hidratação', explicacao: 'média diária de água registrada em relação à sua meta' },
+    { chave: 'sono', nome: 'Sono', explicacao: 'média diária de horas dormidas em relação à sua meta' },
+    { chave: 'nutricao', nome: 'Nutrição', explicacao: 'quão perto da meta de calorias você ficou nos dias registrados' },
+    { chave: 'medidas', nome: 'Medidas', explicacao: 'progresso do peso na direção do seu objetivo, vs. semana anterior' },
+  ]
+
+  function tomDoValor(valor: number): 'positivo' | 'negativo' | 'neutro' {
+    if (valor >= 70) return 'positivo'
+    if (valor < 40) return 'negativo'
+    return 'neutro'
+  }
+
   return (
     <div className="page">
       <h2>Dashboard</h2>
@@ -266,6 +280,25 @@ export function DashboardPage() {
         </div>
         <p className={`resultado-card ${tom}`}>{veredito}</p>
         <p className="hint">{tendencia}</p>
+
+        <div className="score-detalhe-lista">
+          {dimensoesScore.map((d) => {
+            const valor = atual[d.chave]
+            const tomItem = tomDoValor(valor)
+            return (
+              <div key={d.chave} className="score-detalhe-item">
+                <div className="score-detalhe-topo">
+                  <span className="score-detalhe-nome">{d.nome}</span>
+                  <span className={`score-detalhe-valor ${tomItem}`}>{valor}%</span>
+                </div>
+                <div className="score-detalhe-barra">
+                  <div className={`score-detalhe-preenchimento ${tomItem}`} style={{ width: `${Math.min(100, valor)}%` }} />
+                </div>
+                <span className="score-detalhe-explicacao">{d.explicacao}</span>
+              </div>
+            )
+          })}
+        </div>
       </div>
 
       <div className="card">
@@ -288,7 +321,7 @@ export function DashboardPage() {
         <h3 className="card-title">
           <IconRuler size={18} /> Medidas: atual × meta
         </h3>
-        <MeasurementsChart itens={itensMedidas} />
+        <MeasurementsProgress itens={itensMedidas} />
       </div>
 
       <div className="card">
@@ -302,7 +335,7 @@ export function DashboardPage() {
         <h3 className="card-title">
           <IconDumbbell size={18} /> Treinos por semana
         </h3>
-        <WeeklyTrainingChart />
+        <WeeklyTrainingStrip />
       </div>
     </div>
   )
