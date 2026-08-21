@@ -3,6 +3,7 @@ import { FloatingInput } from '../../components/FloatingInput'
 import { IconChevronDown, IconTimer, IconTrash } from '../../components/icons'
 import { registrarLog } from '../../db/repoLogs'
 import type { ExecucaoExercicio } from '../../db/types'
+import { vibrar } from '../../lib/notifications'
 
 type CamposEditaveis = Partial<
   Pick<
@@ -57,7 +58,6 @@ export function ExecucaoItem({ exec, seriesPlanejadas, onAtualizar, onExcluir }:
   const [contagem, setContagem] = useState<number | null>(null)
   const [minimizado, setMinimizado] = useState(false)
   const [mensagem, setMensagem] = useState('')
-  const [cronometroIniciado, setCronometroIniciado] = useState(false)
 
   const descansoSeg = exec.descanso_seg && exec.descanso_seg > 0 ? exec.descanso_seg : 60
   const alvoSeries = seriesPlanejadas && seriesPlanejadas > 0 ? seriesPlanejadas : 3
@@ -80,9 +80,11 @@ export function ExecucaoItem({ exec, seriesPlanejadas, onAtualizar, onExcluir }:
     if (novaSerie >= alvoSeries) {
       onAtualizar(exec.id, { concluido: 1, concluido_em: new Date().toISOString() })
       void registrarLog('exercicio_concluido', exec.registro_treino_id, `${exec.nome} · automático`)
+      vibrar([200, 100, 200, 100, 200])
       setMensagem('EXERCÍCIO CONCLUÍDO! 🏆')
       setFase('concluido')
     } else {
+      vibrar([200, 100, 200])
       setMensagem(mensagemAleatoria())
       setFase('mensagem')
     }
@@ -105,9 +107,10 @@ export function ExecucaoItem({ exec, seriesPlanejadas, onAtualizar, onExcluir }:
     await registrarLog('inicio_cronometro', exec.registro_treino_id, exec.nome)
     // A ficha pré-preenche séries feitas com o valor planejado; a primeira vez que o cronômetro
     // roda pra este exercício, zera o contador pra ele subir 1 por vez até bater o alvo de verdade.
-    if (!cronometroIniciado) {
+    // Usa iniciado_em (persistido no banco) em vez de estado local: local resetaria a cada
+    // remontagem do componente (ex.: trocar de aba e voltar), zerando séries já feitas de verdade.
+    if (exec.iniciado_em === null) {
       onAtualizar(exec.id, { series_feitas: 0, iniciado_em: new Date().toISOString() })
-      setCronometroIniciado(true)
     }
     setContagem(descansoSeg)
     setMinimizado(false)

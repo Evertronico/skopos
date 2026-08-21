@@ -16,7 +16,14 @@ import { listExecucoes, listRegistrosTreino } from '../../db/repoTreino'
 import type { MedidaAntropometrica, MetasMedidas, Perfil } from '../../db/types'
 import { calcularMetas, derivarMacros } from '../../lib/calculations'
 import { daysAgoISO, rotuloDia, todayISO } from '../../lib/date'
-import { scoreEvolucaoMedidas, scoreMediaContraMeta, scoreNutricao, scoreTreino, type RadarScores } from '../../lib/radar'
+import {
+  agruparPorDia,
+  scoreEvolucaoMedidas,
+  scoreMediaContraMeta,
+  scoreNutricao,
+  scoreTreino,
+  type RadarScores,
+} from '../../lib/radar'
 
 const SETE_DIAS_ATRAS = daysAgoISO(7)
 const CATORZE_DIAS_ATRAS = daysAgoISO(14)
@@ -133,9 +140,9 @@ export function DashboardPage() {
         pesoAntigo: number | null,
       ): RadarScores => ({
         treino: scoreTreino(treinos.flatMap((r) => r.execucoes)),
-        hidratacao: scoreMediaContraMeta(hidratacao.map((h) => h.ml_consumido), metas.agua_ml),
-        sono: scoreMediaContraMeta(sono.map((s) => s.horas), metas.sono_horas),
-        nutricao: scoreNutricao(nutricao.map((n) => n.calorias ?? 0).filter((c) => c > 0), metas.calorias),
+        hidratacao: scoreMediaContraMeta(agruparPorDia(hidratacao, (h) => h.ml_consumido), metas.agua_ml),
+        sono: scoreMediaContraMeta(agruparPorDia(sono, (s) => s.horas), metas.sono_horas),
+        nutricao: scoreNutricao(agruparPorDia(nutricao, (n) => n.calorias ?? 0), metas.calorias),
         medidas: scoreEvolucaoMedidas(pesoRecente, pesoAntigo, perfil.objetivo),
       })
 
@@ -272,6 +279,22 @@ export function DashboardPage() {
 
       <div className="card">
         <h3 className="card-title">
+          <IconDroplet size={18} /> {rotuloDia(diaHoje)}
+        </h3>
+        <DateNavigator data={diaHoje} onChange={setDiaHoje} />
+        <div className="hoje-grid">
+          <WaterBottle percentual={aguaHojePct} />
+          <NutritionPlate
+            calorias={caloriasHojePct}
+            proteina={proteinaHojePct}
+            carboidratos={carboHojePct}
+            gordura={gorduraHojePct}
+          />
+        </div>
+      </div>
+
+      <div className="card">
+        <h3 className="card-title">
           <IconTarget size={18} /> Score semanal
         </h3>
         <div className="score-semanal">
@@ -298,22 +321,6 @@ export function DashboardPage() {
               </div>
             )
           })}
-        </div>
-      </div>
-
-      <div className="card">
-        <h3 className="card-title">
-          <IconDroplet size={18} /> {rotuloDia(diaHoje)}
-        </h3>
-        <DateNavigator data={diaHoje} onChange={setDiaHoje} />
-        <div className="hoje-grid">
-          <WaterBottle percentual={aguaHojePct} />
-          <NutritionPlate
-            calorias={caloriasHojePct}
-            proteina={proteinaHojePct}
-            carboidratos={carboHojePct}
-            gordura={gorduraHojePct}
-          />
         </div>
       </div>
 

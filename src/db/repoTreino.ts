@@ -17,7 +17,14 @@ export async function updatePlano(id: number, nome: string): Promise<void> {
   await run('UPDATE planos_treino SET nome = ? WHERE id = ?', [nome, id])
 }
 
+/**
+ * Cascata explícita em código: ON DELETE CASCADE está declarado no schema, mas depende de
+ * PRAGMA foreign_keys estar ativo na sessão que fez o DELETE — dados reais mostraram execuções
+ * órfãs (registro_treino_id apontando pra registro já apagado), então não confiamos só nisso.
+ */
 export async function deletePlano(id: number): Promise<void> {
+  const dias = await query<{ id: number }>('SELECT id FROM dias_plano WHERE plano_id = ?', [id])
+  for (const dia of dias) await deleteDiaDoPlano(dia.id)
   await run('DELETE FROM planos_treino WHERE id = ?', [id])
 }
 
@@ -40,6 +47,9 @@ export async function updateDiaDoPlano(id: number, diaSemana: DiaSemana, nome: s
 }
 
 export async function deleteDiaDoPlano(id: number): Promise<void> {
+  const registros = await query<{ id: number }>('SELECT id FROM registros_treino WHERE dia_plano_id = ?', [id])
+  for (const registro of registros) await deleteRegistroTreino(registro.id)
+  await run('DELETE FROM exercicios_plano WHERE dia_plano_id = ?', [id])
   await run('DELETE FROM dias_plano WHERE id = ?', [id])
 }
 
@@ -219,5 +229,6 @@ export async function listRegistrosTreinoEntre(inicioISO: string, fimISO: string
 }
 
 export async function deleteRegistroTreino(id: number): Promise<void> {
+  await run('DELETE FROM execucoes_exercicio WHERE registro_treino_id = ?', [id])
   await run('DELETE FROM registros_treino WHERE id = ?', [id])
 }

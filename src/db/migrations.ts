@@ -129,6 +129,36 @@ function migrarV5ParaV6(db: Database): void {
   }
 }
 
+/**
+ * Remove execuções/exercícios/registros órfãos, deixados por deletes que rodaram antes da cascata
+ * ser explícita em código (dependiam só do PRAGMA foreign_keys, que dados reais mostraram falhar
+ * em cascatear no sql.js). Idempotente — não altera nada depois da primeira limpeza.
+ */
+function limparOrfaos(db: Database): boolean {
+  if (!tableExists(db, 'registros_treino')) return false
+  let linhasRemovidas = 0
+
+  // De cima pra baixo na hierarquia (plano → dia → registro/exercício → execução): um dia órfão
+  // só é detectável antes de limpar seus próprios filhos, senão o filho escapa da varredura.
+  if (tableExists(db, 'dias_plano') && tableExists(db, 'planos_treino')) {
+    db.run('DELETE FROM dias_plano WHERE plano_id NOT IN (SELECT id FROM planos_treino)')
+    linhasRemovidas += db.getRowsModified()
+  }
+  if (tableExists(db, 'dias_plano')) {
+    db.run('DELETE FROM registros_treino WHERE dia_plano_id NOT IN (SELECT id FROM dias_plano)')
+    linhasRemovidas += db.getRowsModified()
+    if (tableExists(db, 'exercicios_plano')) {
+      db.run('DELETE FROM exercicios_plano WHERE dia_plano_id NOT IN (SELECT id FROM dias_plano)')
+      linhasRemovidas += db.getRowsModified()
+    }
+  }
+  if (tableExists(db, 'execucoes_exercicio')) {
+    db.run('DELETE FROM execucoes_exercicio WHERE registro_treino_id NOT IN (SELECT id FROM registros_treino)')
+    linhasRemovidas += db.getRowsModified()
+  }
+  return linhasRemovidas > 0
+}
+
 /** Roda as migrações necessárias no banco aberto. Retorna true se algo foi alterado (precisa persistir). */
 export function runMigrations(db: Database): boolean {
   let alterou = false
@@ -150,6 +180,10 @@ export function runMigrations(db: Database): boolean {
 
   if (tableExists(db, 'exercicios_plano') && !tabelaTemColuna(db, 'exercicios_plano', 'grupo_muscular')) {
     migrarV5ParaV6(db)
+    alterou = true
+  }
+
+  if (limparOrfaos(db)) {
     alterou = true
   }
 

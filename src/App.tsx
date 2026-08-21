@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react'
-import { IconCloud, IconDashboard, IconDroplet, IconDumbbell, IconMoon, IconRuler, IconSun, IconUser } from './components/icons'
+import { IconBell, IconCloud, IconDashboard, IconDroplet, IconDumbbell, IconMoon, IconRuler, IconSun, IconUser } from './components/icons'
 import { BackupPage } from './features/backup/BackupPage'
 import { DashboardPage } from './features/dashboard/DashboardPage'
 import { MedidasPage } from './features/medidas/MedidasPage'
 import { NutricaoPage } from './features/nutricao/NutricaoPage'
 import { PerfilPage } from './features/perfil/PerfilPage'
 import { TreinoPage } from './features/treino/TreinoPage'
+import { verificarLembretes } from './lib/lembretes'
+import { pedirPermissaoNotificacao, permissaoNotificacao, suportaNotificacao } from './lib/notifications'
 import { aplicarTema, lerTemaSalvo, type Tema } from './lib/theme'
+
+const INTERVALO_LEMBRETES_MS = 15 * 60 * 1000
 
 type Aba = 'dashboard' | 'medidas' | 'treino' | 'nutricao' | 'perfil' | 'backup'
 
@@ -22,12 +26,29 @@ const ABAS: { chave: Aba; rotulo: string; Icone: typeof IconDashboard }[] = [
 export default function App() {
   const [aba, setAba] = useState<Aba>('dashboard')
   const [tema, setTema] = useState<Tema>('dark')
+  const [mostrarBannerLembretes, setMostrarBannerLembretes] = useState(false)
 
   useEffect(() => {
     const salvo = lerTemaSalvo()
     setTema(salvo)
     aplicarTema(salvo)
   }, [])
+
+  useEffect(() => {
+    setMostrarBannerLembretes(suportaNotificacao() && permissaoNotificacao() === 'default')
+
+    if (permissaoNotificacao() !== 'granted') return
+
+    void verificarLembretes()
+    const intervalo = setInterval(() => void verificarLembretes(), INTERVALO_LEMBRETES_MS)
+    return () => clearInterval(intervalo)
+  }, [])
+
+  async function ativarLembretes() {
+    const concedida = await pedirPermissaoNotificacao()
+    setMostrarBannerLembretes(!concedida)
+    if (concedida) void verificarLembretes()
+  }
 
   function alternarTema() {
     const novo: Tema = tema === 'dark' ? 'light' : 'dark'
@@ -49,6 +70,19 @@ export default function App() {
           {tema === 'dark' ? <IconSun size={19} /> : <IconMoon size={19} />}
         </button>
       </header>
+
+      {mostrarBannerLembretes && (
+        <div className="banner-lembretes">
+          <IconBell size={18} />
+          <span>Ative lembretes de água, refeição e treino no seu ritmo do dia.</span>
+          <button type="button" onClick={ativarLembretes}>
+            Ativar
+          </button>
+          <button type="button" className="link" onClick={() => setMostrarBannerLembretes(false)}>
+            Agora não
+          </button>
+        </div>
+      )}
 
       <main className="app-content">
         {aba === 'dashboard' && <DashboardPage />}

@@ -14,6 +14,19 @@ export function scoreTreino(execucoes: { concluido: number }[]): number {
   return Math.round((concluidas / execucoes.length) * 100)
 }
 
+/**
+ * Soma os valores por data antes de pontuar. Sem isso, quem registra água/comida em vários lançamentos
+ * por dia (o normal) tem cada lançamento comparado sozinho contra a meta do dia inteiro, e a média
+ * despenca artificialmente — o score deixa de refletir a adesão real.
+ */
+export function agruparPorDia<T extends { data: string }>(itens: T[], valor: (item: T) => number): number[] {
+  const porDia = new Map<string, number>()
+  for (const item of itens) {
+    porDia.set(item.data, (porDia.get(item.data) ?? 0) + valor(item))
+  }
+  return Array.from(porDia.values())
+}
+
 export function scoreMediaContraMeta(valores: number[], meta: number): number {
   if (valores.length === 0 || meta <= 0) return 0
   const media = valores.reduce((a, b) => a + b, 0) / valores.length

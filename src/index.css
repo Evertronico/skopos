@@ -103,6 +103,27 @@ body {
   border-radius: var(--radius-sm);
 }
 
+.banner-lembretes {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 1rem;
+  background: var(--accent-soft);
+  color: var(--text);
+  font-size: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.banner-lembretes span {
+  flex: 1;
+  min-width: 10rem;
+}
+
+.banner-lembretes button {
+  padding: 0.35rem 0.8rem;
+  font-size: 0.8rem;
+}
+
 .app-content {
   flex: 1;
   padding: 1.1rem;
