@@ -128,6 +128,7 @@ export interface ExecucaoExercicio {
   concluido: number
   iniciado_em: string | null
   concluido_em: string | null
+  grupo_muscular: string | null
 }
 
 export interface PlanoNutricional {

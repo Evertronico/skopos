@@ -47,6 +47,7 @@ interface AvulsoForm {
   repeticoes_feitas: NumeroEditavel
   carga_kg: NumeroEditavel
   descanso_seg: NumeroEditavel
+  grupo_muscular: string
 }
 
 const EXERCICIO_VAZIO: ExercicioForm = {
@@ -57,7 +58,14 @@ const EXERCICIO_VAZIO: ExercicioForm = {
   descanso_seg: 60,
   grupo_muscular: '',
 }
-const AVULSO_VAZIO: AvulsoForm = { nome: '', series_feitas: 3, repeticoes_feitas: 10, carga_kg: 0, descanso_seg: 60 }
+const AVULSO_VAZIO: AvulsoForm = {
+  nome: '',
+  series_feitas: 3,
+  repeticoes_feitas: 10,
+  carga_kg: 0,
+  descanso_seg: 60,
+  grupo_muscular: '',
+}
 const IDADE_LIMITE_FICHA_DIAS = 30
 
 function numeroOuVazio(valorTexto: string): NumeroEditavel {
@@ -201,6 +209,7 @@ export function TreinoPage() {
       repeticoes_feitas: ouZero(novoAvulso.repeticoes_feitas),
       carga_kg: ouZero(novoAvulso.carga_kg),
       descanso_seg: ouZero(novoAvulso.descanso_seg),
+      grupo_muscular: novoAvulso.grupo_muscular || null,
     })
     setNovoAvulso(AVULSO_VAZIO)
     setAvulsoRegistroId(null)
@@ -328,6 +337,8 @@ export function TreinoPage() {
         {registrosDoDia.map((registro) => {
           const dia = todosDias.find((d) => d.id === registro.dia_plano_id)
           const execucoes = execucoesPorRegistro[registro.id] ?? []
+          const concluidas = execucoes.filter((e) => e.concluido).length
+          const progresso = execucoes.length > 0 ? Math.round((concluidas / execucoes.length) * 100) : 0
           return (
             <div key={registro.id} className="registro-treino-bloco">
               <div className="section-header">
@@ -344,16 +355,34 @@ export function TreinoPage() {
                 </button>
               </div>
 
+              {execucoes.length > 0 && (
+                <div className="registro-progresso">
+                  <div className="registro-progresso-barra">
+                    <div
+                      className={progresso === 100 ? 'registro-progresso-preenchimento completo' : 'registro-progresso-preenchimento'}
+                      style={{ width: `${progresso}%` }}
+                    />
+                  </div>
+                  <span className="registro-progresso-texto">
+                    {concluidas}/{execucoes.length} concluídos
+                  </span>
+                </div>
+              )}
+
               <ul className="list">
-                {execucoes.map((exec) => (
-                  <ExecucaoItem
-                    key={exec.id}
-                    exec={exec}
-                    seriesPlanejadas={todosExercicios.find((ex) => ex.id === exec.exercicio_plano_id)?.series ?? null}
-                    onAtualizar={handleAtualizarExecucao}
-                    onExcluir={handleExcluirExecucao}
-                  />
-                ))}
+                {execucoes.map((exec) => {
+                  const exercicioPlano = todosExercicios.find((ex) => ex.id === exec.exercicio_plano_id)
+                  return (
+                    <ExecucaoItem
+                      key={exec.id}
+                      exec={exec}
+                      seriesPlanejadas={exercicioPlano?.series ?? null}
+                      grupoMuscular={exercicioPlano?.grupo_muscular ?? exec.grupo_muscular}
+                      onAtualizar={handleAtualizarExecucao}
+                      onExcluir={handleExcluirExecucao}
+                    />
+                  )
+                })}
               </ul>
 
               {avulsoRegistroId !== registro.id && (
@@ -370,6 +399,20 @@ export function TreinoPage() {
                       onChange={(e) => setNovoAvulso({ ...novoAvulso, nome: e.target.value })}
                       autoFocus
                     />
+                  </label>
+                  <label>
+                    Grupo muscular
+                    <select
+                      value={novoAvulso.grupo_muscular}
+                      onChange={(e) => setNovoAvulso({ ...novoAvulso, grupo_muscular: e.target.value })}
+                    >
+                      <option value="">Selecione</option>
+                      {GRUPOS_MUSCULARES.map((g) => (
+                        <option key={g} value={g}>
+                          {g}
+                        </option>
+                      ))}
+                    </select>
                   </label>
                   <div className="execucao-campos">
                     <FloatingInput
@@ -657,14 +700,15 @@ export function TreinoPage() {
                     return (
                       <li key={ex.id}>
                         <button className="list-item-conteudo" onClick={() => iniciarEdicaoExercicio(ex)}>
-                          <span>
-                            {ex.nome} — {ex.series}x{ex.repeticoes} @ {ex.carga_kg}kg, descanso {ex.descanso_seg}s
+                          <span className="exercicio-nome-lista">{ex.nome}</span>
+                          <span className="exercicio-meta-lista">
+                            {ex.series}×{ex.repeticoes} · {ex.carga_kg}kg · descanso {ex.descanso_seg}s
+                            {ex.grupo_muscular && status && (
+                              <span className={`badge badge-${status.tom}`}>
+                                {ex.grupo_muscular} · {status.texto}
+                              </span>
+                            )}
                           </span>
-                          {ex.grupo_muscular && status && (
-                            <span className={`badge badge-${status.tom}`}>
-                              {ex.grupo_muscular} · {status.texto}
-                            </span>
-                          )}
                         </button>
                         <button className="icon-danger" onClick={() => handleExcluirExercicio(ex.id)} aria-label="Excluir exercício">
                           <IconTrash size={16} />

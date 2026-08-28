@@ -588,14 +588,6 @@ export function NutricaoPage() {
         </h3>
         <form className="form-page" onSubmit={handleSalvarRefeicao}>
           <FloatingInput
-            label="Hora"
-            type="time"
-            className="horario-campo"
-            value={formRefeicao.hora}
-            onChange={(e) => setFormRefeicao({ ...formRefeicao, hora: e.target.value })}
-          />
-
-          <FloatingInput
             label="Descrição da refeição"
             type="text"
             list="refeicoes-sugeridas"
@@ -610,6 +602,13 @@ export function NutricaoPage() {
           </datalist>
 
           <div className="campos-grid">
+            <FloatingInput
+              label="Hora"
+              type="time"
+              className="horario-campo"
+              value={formRefeicao.hora}
+              onChange={(e) => setFormRefeicao({ ...formRefeicao, hora: e.target.value })}
+            />
             <FloatingInput
               label="Calorias"
               type="number"

@@ -129,6 +129,13 @@ function migrarV5ParaV6(db: Database): void {
   }
 }
 
+/** Schema v7 adicionou grupo_muscular em execucoes_exercicio, pra exercícios avulsos entrarem no mapa de estímulo semanal. */
+function migrarV6ParaV7(db: Database): void {
+  if (tableExists(db, 'execucoes_exercicio') && !tabelaTemColuna(db, 'execucoes_exercicio', 'grupo_muscular')) {
+    db.run('ALTER TABLE execucoes_exercicio ADD COLUMN grupo_muscular TEXT')
+  }
+}
+
 /**
  * Remove execuções/exercícios/registros órfãos, deixados por deletes que rodaram antes da cascata
  * ser explícita em código (dependiam só do PRAGMA foreign_keys, que dados reais mostraram falhar
@@ -180,6 +187,11 @@ export function runMigrations(db: Database): boolean {
 
   if (tableExists(db, 'exercicios_plano') && !tabelaTemColuna(db, 'exercicios_plano', 'grupo_muscular')) {
     migrarV5ParaV6(db)
+    alterou = true
+  }
+
+  if (tableExists(db, 'execucoes_exercicio') && !tabelaTemColuna(db, 'execucoes_exercicio', 'grupo_muscular')) {
+    migrarV6ParaV7(db)
     alterou = true
   }
 

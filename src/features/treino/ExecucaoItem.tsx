@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { FloatingInput } from '../../components/FloatingInput'
-import { IconChevronDown, IconTimer, IconTrash } from '../../components/icons'
+import { IconCheck, IconChevronDown, IconTimer, IconTrash } from '../../components/icons'
 import { registrarLog } from '../../db/repoLogs'
 import type { ExecucaoExercicio } from '../../db/types'
 import { vibrar } from '../../lib/notifications'
@@ -15,6 +15,7 @@ type CamposEditaveis = Partial<
 interface Props {
   exec: ExecucaoExercicio
   seriesPlanejadas: number | null
+  grupoMuscular?: string | null
   onAtualizar: (id: number, campos: CamposEditaveis) => void
   onExcluir?: (id: number) => void
 }
@@ -53,7 +54,7 @@ function formatarMMSS(segundos: number): string {
 const RAIO_ANEL = 17
 const CIRCUNFERENCIA_ANEL = 2 * Math.PI * RAIO_ANEL
 
-export function ExecucaoItem({ exec, seriesPlanejadas, onAtualizar, onExcluir }: Props) {
+export function ExecucaoItem({ exec, seriesPlanejadas, grupoMuscular, onAtualizar, onExcluir }: Props) {
   const [fase, setFase] = useState<Fase>('idle')
   const [contagem, setContagem] = useState<number | null>(null)
   const [minimizado, setMinimizado] = useState(false)
@@ -152,20 +153,29 @@ export function ExecucaoItem({ exec, seriesPlanejadas, onAtualizar, onExcluir }:
       )}
 
       <div className="execucao-topo">
-        <label className="checkbox">
-          <input
-            type="checkbox"
-            checked={jaConcluido}
-            onChange={(e) =>
-              onAtualizar(exec.id, {
-                concluido: e.target.checked ? 1 : 0,
-                concluido_em: e.target.checked ? new Date().toISOString() : null,
-              })
-            }
-          />
-          {exec.nome}
-          {exec.exercicio_plano_id === null && <span className="badge">extra</span>}
-        </label>
+        <button
+          type="button"
+          role="checkbox"
+          aria-checked={jaConcluido}
+          aria-label={jaConcluido ? 'Marcar exercício como não concluído' : 'Marcar exercício como concluído'}
+          className={jaConcluido ? 'execucao-status concluido' : 'execucao-status'}
+          onClick={() =>
+            onAtualizar(exec.id, {
+              concluido: jaConcluido ? 0 : 1,
+              concluido_em: jaConcluido ? null : new Date().toISOString(),
+            })
+          }
+        >
+          {jaConcluido && <IconCheck size={13} />}
+        </button>
+
+        <div className="execucao-info">
+          <span className="execucao-nome">
+            {exec.nome}
+            {grupoMuscular && <span className="execucao-grupo"> · {grupoMuscular}</span>}
+          </span>
+          {exec.exercicio_plano_id === null && <span className="badge badge-neutro">extra</span>}
+        </div>
 
         <div className="execucao-topo-acoes">
           {!jaConcluido && fase === 'idle' && (

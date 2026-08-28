@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { DateNavigator } from '../../components/DateNavigator'
 import { MeasurementsEvolutionChart } from '../../components/MeasurementsEvolutionChart'
 import { MeasurementsProgress, type ItemMedida } from '../../components/MeasurementsProgress'
+import { MuscleMap } from '../../components/MuscleMap'
 import { NutritionPlate } from '../../components/NutritionPlate'
 import { WaterBottle } from '../../components/WaterBottle'
 import { WeeklyTrainingStrip } from '../../components/WeeklyTrainingStrip'
@@ -12,10 +13,11 @@ import { getMetasMedidas } from '../../db/repoMetasMedidas'
 import { getPerfil } from '../../db/repoPerfil'
 import { getPlanoNutricional } from '../../db/repoPlanoNutricional'
 import { listHidratacao, listHidratacaoDoDia, listNutricao, listNutricaoDoDia, listSono } from '../../db/repoRegistros'
-import { listExecucoes, listRegistrosTreino } from '../../db/repoTreino'
-import type { MedidaAntropometrica, MetasMedidas, Perfil } from '../../db/types'
+import { listExecucoes, listExecucoesComGrupoEntre, listRegistrosTreino } from '../../db/repoTreino'
+import { GRUPOS_MUSCULARES, type GrupoMuscular, type MedidaAntropometrica, type MetasMedidas, type Perfil } from '../../db/types'
 import { calcularMetas, derivarMacros } from '../../lib/calculations'
 import { daysAgoISO, rotuloDia, todayISO } from '../../lib/date'
+import { calcularEstimuloMuscular, COR_NIVEL_ESTIMULO, type EstimuloGrupo, type NivelEstimulo } from '../../lib/estimuloMuscular'
 import {
   agruparPorDia,
   scoreEvolucaoMedidas,
@@ -27,6 +29,15 @@ import {
 
 const SETE_DIAS_ATRAS = daysAgoISO(7)
 const CATORZE_DIAS_ATRAS = daysAgoISO(14)
+
+const GRUPOS_LOCALIZADOS = GRUPOS_MUSCULARES.filter((g) => g !== 'Corpo todo/Cardio') as GrupoMuscular[]
+
+const ROTULO_NIVEL: Record<NivelEstimulo, string> = {
+  nenhum: 'sem estímulo',
+  baixo: 'estímulo baixo',
+  moderado: 'abaixo do ideal',
+  adequado: 'estímulo adequado',
+}
 
 const CAMPOS_MEDIDA: { chave: Exclude<keyof MedidaAntropometrica, 'id' | 'data' | 'hora'>; label: string }[] = [
   { chave: 'peso_kg', label: 'Peso (kg)' },
@@ -57,6 +68,8 @@ export function DashboardPage() {
   const [semDados, setSemDados] = useState(false)
   const [medidasLista, setMedidasLista] = useState<MedidaAntropometrica[]>([])
   const [itensMedidas, setItensMedidas] = useState<ItemMedida[]>([])
+  const [estimulos, setEstimulos] = useState<Record<string, EstimuloGrupo>>({})
+  const [cardioSemana, setCardioSemana] = useState(0)
 
   const [diaHoje, setDiaHoje] = useState(todayISO())
   const [aguaHojePct, setAguaHojePct] = useState(0)
@@ -68,7 +81,7 @@ export function DashboardPage() {
   // --- Score semanal, medidas atual x meta, evolução das medidas ---
   useEffect(() => {
     async function carregar() {
-      const [perfil, medidas, metasMedidas, planoNutricional, treinos14, hidratacao14, sono14, nutricao14] =
+      const [perfil, medidas, metasMedidas, planoNutricional, treinos14, hidratacao14, sono14, nutricao14, execucoesGrupoSemana] =
         await Promise.all([
           getPerfil(),
           listMedidas(),
@@ -78,6 +91,7 @@ export function DashboardPage() {
           listHidratacao(14),
           listSono(14),
           listNutricao(14),
+          listExecucoesComGrupoEntre(SETE_DIAS_ATRAS, todayISO()),
         ])
 
       if (!perfil) {
@@ -86,6 +100,8 @@ export function DashboardPage() {
       }
 
       setMedidasLista(medidas)
+      setEstimulos(calcularEstimuloMuscular(execucoesGrupoSemana, GRUPOS_LOCALIZADOS, perfil.objetivo))
+      setCardioSemana(new Set(execucoesGrupoSemana.filter((e) => e.grupo === 'Corpo todo/Cardio').map((e) => e.data)).size)
 
       const pesoHoje = encontrarPesoProximo(medidas, todayISO())
       const metasCalculadas = calcularMetas(perfil as Perfil, pesoHoje)
@@ -321,6 +337,46 @@ export function DashboardPage() {
               </div>
             )
           })}
+        </div>
+      </div>
+
+      <div className="card">
+        <h3 className="card-title">
+          <IconDumbbell size={18} /> Estímulo muscular da semana
+        </h3>
+        <p className="hint">Séries concluídas nos últimos 7 dias, por grupo — de acordo com o seu objetivo.</p>
+
+        <div className="muscle-map-legenda">
+          {(['adequado', 'moderado', 'baixo', 'nenhum'] as NivelEstimulo[]).map((nivel) => (
+            <span key={nivel} className="muscle-map-legenda-item">
+              <span className="muscle-map-legenda-ponto" style={{ background: COR_NIVEL_ESTIMULO[nivel] }} />
+              {ROTULO_NIVEL[nivel]}
+            </span>
+          ))}
+        </div>
+
+        <MuscleMap estimulos={estimulos} />
+
+        <div className="muscle-map-lista">
+          {GRUPOS_LOCALIZADOS.map((grupo) => {
+            const e = estimulos[grupo]
+            return (
+              <div key={grupo} className="muscle-map-linha">
+                <span className="muscle-map-linha-ponto" style={{ background: COR_NIVEL_ESTIMULO[e?.nivel ?? 'nenhum'] }} />
+                <span className="muscle-map-linha-nome">{grupo}</span>
+                <span className="muscle-map-linha-detalhe">
+                  {e && e.series > 0 ? `${e.series} séries · ${e.sessoes}x na semana` : 'sem registro'}
+                </span>
+              </div>
+            )
+          })}
+          {cardioSemana > 0 && (
+            <div className="muscle-map-linha">
+              <span className="muscle-map-linha-ponto" style={{ background: COR_NIVEL_ESTIMULO.adequado }} />
+              <span className="muscle-map-linha-nome">Cardio</span>
+              <span className="muscle-map-linha-detalhe">{cardioSemana}x na semana</span>
+            </div>
+          )}
         </div>
       </div>
 

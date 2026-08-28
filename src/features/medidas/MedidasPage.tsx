@@ -184,15 +184,14 @@ export function MedidasPage() {
 
         <DateNavigator data={diaAtual} onChange={setDiaAtual} />
 
-        <FloatingInput
-          label="Hora"
-          type="time"
-          className="horario-campo"
-          value={form.hora ?? ''}
-          onChange={(e) => setForm({ ...form, hora: e.target.value || null })}
-        />
-
         <div className="campos-grid">
+          <FloatingInput
+            label="Hora"
+            type="time"
+            className="horario-campo"
+            value={form.hora ?? ''}
+            onChange={(e) => setForm({ ...form, hora: e.target.value || null })}
+          />
           {CAMPOS.map(({ chave, rotulo }) => (
             <FloatingInput
               key={chave}

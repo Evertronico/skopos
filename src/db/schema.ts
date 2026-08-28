@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 6
+export const SCHEMA_VERSION = 7
 
 export const SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS perfil (
@@ -112,6 +112,8 @@ CREATE TABLE IF NOT EXISTS registros_treino (
   hora TEXT
 );
 
+-- grupo_muscular só é usado quando exercicio_plano_id é NULL (exercício avulso/extra); pra exercícios
+-- previstos, o grupo vem de exercicios_plano — assim editar o grupo na ficha atualiza o histórico junto.
 CREATE TABLE IF NOT EXISTS execucoes_exercicio (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   registro_treino_id INTEGER NOT NULL REFERENCES registros_treino(id) ON DELETE CASCADE,
@@ -123,7 +125,8 @@ CREATE TABLE IF NOT EXISTS execucoes_exercicio (
   descanso_seg INTEGER,
   concluido INTEGER DEFAULT 0,
   iniciado_em TEXT,
-  concluido_em TEXT
+  concluido_em TEXT,
+  grupo_muscular TEXT
 );
 
 -- Trilha de eventos do treino (início/fim de sessão, cronômetro, conclusão de exercício) — usada para métricas futuras.

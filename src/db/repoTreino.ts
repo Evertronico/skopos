@@ -167,13 +167,13 @@ export async function listExecucoes(registroTreinoId: number): Promise<ExecucaoE
 export async function adicionarExecucaoAvulsa(
   registroTreinoId: number,
   nome: string,
-  campos: Partial<Pick<ExecucaoExercicio, 'series_feitas' | 'repeticoes_feitas' | 'carga_kg' | 'descanso_seg'>>,
+  campos: Partial<Pick<ExecucaoExercicio, 'series_feitas' | 'repeticoes_feitas' | 'carga_kg' | 'descanso_seg' | 'grupo_muscular'>>,
 ): Promise<void> {
   const agora = new Date().toISOString()
   await run(
     `INSERT INTO execucoes_exercicio
-       (registro_treino_id, exercicio_plano_id, nome, series_feitas, repeticoes_feitas, carga_kg, descanso_seg, concluido, iniciado_em, concluido_em)
-     VALUES (?, NULL, ?, ?, ?, ?, ?, 1, ?, ?)`,
+       (registro_treino_id, exercicio_plano_id, nome, series_feitas, repeticoes_feitas, carga_kg, descanso_seg, concluido, iniciado_em, concluido_em, grupo_muscular)
+     VALUES (?, NULL, ?, ?, ?, ?, ?, 1, ?, ?, ?)`,
     [
       registroTreinoId,
       nome,
@@ -183,6 +183,7 @@ export async function adicionarExecucaoAvulsa(
       campos.descanso_seg ?? null,
       agora,
       agora,
+      campos.grupo_muscular ?? null,
     ],
   )
 }
@@ -224,6 +225,26 @@ export async function listHistoricoDoDia(diaPlanoId: number, limite = 10): Promi
 export async function listRegistrosTreinoEntre(inicioISO: string, fimISO: string): Promise<RegistroTreino[]> {
   return query<RegistroTreino>(
     `SELECT * FROM registros_treino WHERE data >= ? AND data <= ? ORDER BY data ASC`,
+    [inicioISO, fimISO],
+  )
+}
+
+export interface ExecucaoComGrupo {
+  grupo: string
+  series_feitas: number | null
+  data: string
+}
+
+/** Execuções concluídas com grupo muscular resolvido (da ficha, ou do próprio registro se for avulso), num intervalo. */
+export async function listExecucoesComGrupoEntre(inicioISO: string, fimISO: string): Promise<ExecucaoComGrupo[]> {
+  return query<ExecucaoComGrupo>(
+    `SELECT COALESCE(ep.grupo_muscular, ee.grupo_muscular) as grupo, ee.series_feitas as series_feitas, rt.data as data
+     FROM execucoes_exercicio ee
+     JOIN registros_treino rt ON rt.id = ee.registro_treino_id
+     LEFT JOIN exercicios_plano ep ON ep.id = ee.exercicio_plano_id
+     WHERE ee.concluido = 1 AND rt.data >= ? AND rt.data <= ?
+       AND COALESCE(ep.grupo_muscular, ee.grupo_muscular) IS NOT NULL
+       AND COALESCE(ep.grupo_muscular, ee.grupo_muscular) != ''`,
     [inicioISO, fimISO],
   )
 }
